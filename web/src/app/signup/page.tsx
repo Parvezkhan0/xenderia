@@ -3,7 +3,7 @@ import AuthForm from '@/components/AuthForm';
 
 export default function SignupPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div />}>
       <AuthForm mode="signup" />
     </Suspense>
   );
