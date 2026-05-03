@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #080808;
+  --foreground: #f0f0f0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'IBM Plex Sans', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Remove default margins */
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+}
+
+/* Remove list styles */
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth anchor transitions */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Remove input outline globally — each component handles focus */
+input, button, textarea, select {
+  font-family: inherit;
+}
