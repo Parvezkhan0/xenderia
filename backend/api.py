@@ -902,6 +902,10 @@
 
 # ------------------------------------------------------------------------------------------------------
 # !/usr/bin/env python3
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
 """
 FACT System REST API
 FastAPI wrapper around the FACT driver for frontend dashboard communication.
@@ -912,8 +916,6 @@ Run with:
 
 import json
 import time
-import sys
-import os
 import uuid
 import re
 import traceback
@@ -929,8 +931,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
 from src.core.rate_limiter import limiter
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.core.config import get_config
 from src.core.driver import get_driver
