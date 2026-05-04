@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
 # #!/usr/bin/env python3
 # """
 # FACT System REST API
@@ -902,9 +906,9 @@
 
 # ------------------------------------------------------------------------------------------------------
 # !/usr/bin/env python3
-import sys
-import os
-sys.path.insert(0, os.path.dirname(__file__))
+# import sys
+# import os
+# sys.path.insert(0, os.path.dirname(__file__))
 
 """
 FACT System REST API
