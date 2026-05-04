@@ -40,7 +40,7 @@ except ImportError:
     from ..tools.decorators import get_tool_registry
     from ..tools.connectors.sql import initialize_sql_tool
     from ..monitoring.metrics import get_metrics_collector
-    from src.cache import initialize_cache_system, get_cache_system, FACTCacheSystem
+    from ..cache import initialize_cache_system, get_cache_system, FACTCacheSystem
 
 
 logger = structlog.get_logger(__name__)
