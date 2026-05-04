@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.dirname(__file__))
-
 # #!/usr/bin/env python3
 # """
 # FACT System REST API
