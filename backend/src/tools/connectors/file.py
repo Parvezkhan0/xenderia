@@ -12,7 +12,7 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 import structlog
 
-from tools.decorators import Tool
+from ..decorators import Tool
 from ...core.errors import ToolExecutionError, SecurityError, ValidationError
 
 

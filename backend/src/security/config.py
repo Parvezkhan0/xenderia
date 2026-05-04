@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from cryptography.fernet import Fernet
 import structlog
 
-from core.errors import ConfigurationError, SecurityError
+from ..core.errors import ConfigurationError, SecurityError
 
 
 logger = structlog.get_logger(__name__)

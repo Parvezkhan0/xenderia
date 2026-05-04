@@ -20,7 +20,7 @@ except ImportError:
     HTTP_AVAILABLE = False
     aiohttp = None
 
-from tools.decorators import Tool
+from ..decorators import Tool
 from ...core.errors import ToolExecutionError, SecurityError, ValidationError
 
 

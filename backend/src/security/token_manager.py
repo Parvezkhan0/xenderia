@@ -20,7 +20,7 @@ import base64
 import json
 import structlog
 
-from core.errors import SecurityError, AuthenticationError
+from ..core.errors import SecurityError, AuthenticationError
 
 
 logger = structlog.get_logger(__name__)

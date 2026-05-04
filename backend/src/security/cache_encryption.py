@@ -18,7 +18,7 @@ from cryptography.hazmat.backends import default_backend
 import base64
 import structlog
 
-from core.errors import CacheError, SecurityError
+from ..core.errors import CacheError, SecurityError
 
 
 logger = structlog.get_logger(__name__)
