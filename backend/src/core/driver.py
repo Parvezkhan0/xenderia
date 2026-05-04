@@ -20,27 +20,12 @@ from .errors import (
     classify_error, create_user_friendly_message, log_error_with_context,
     provide_graceful_degradation, CacheError
 )
-try:
-    # Try relative imports first (when used as package)
-    from ..db.connection import DatabaseManager, current_user_uid
-    from ..tools.decorators import get_tool_registry
-    from ..tools.connectors.sql import initialize_sql_tool
-    from ..monitoring.metrics import get_metrics_collector
-    from ..cache import initialize_cache_system, get_cache_system, FACTCacheSystem
-except ImportError:
-    # Fall back to absolute imports (when run as script)
-    import sys
-    from pathlib import Path
-    # Add src to path if not already there
-    src_path = str(Path(__file__).parent.parent)
-    if src_path not in sys.path:
-        sys.path.insert(0, src_path)
 
-    from db.connection import DatabaseManager, current_user_uid
-    from tools.decorators import get_tool_registry
-    from tools.connectors.sql import initialize_sql_tool
-    from monitoring.metrics import get_metrics_collector
-    from cache import initialize_cache_system, get_cache_system, FACTCacheSystem
+from src.db.connection import DatabaseManager, current_user_uid
+from src.tools.decorators import get_tool_registry
+from src.tools.connectors.sql import initialize_sql_tool
+from src.monitoring.metrics import get_metrics_collector
+from src.cache import initialize_cache_system, get_cache_system, FACTCacheSystem
 
 
 logger = structlog.get_logger(__name__)
