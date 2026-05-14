@@ -843,21 +843,23 @@ export default function QueryPage() {
         </aside>
 
         <div className="zq-main">
-          <div className="zq-topbar">
-            <div className="zq-topbar-left">
-              <div className="zq-topbar-eye">Query Engine</div>
-              <h1 className="zq-topbar-title">
-                Ask your <span className="hl">data</span> anything
-              </h1>
-            </div>
-
-            {plan === 'free' && !dbConnected && (
-              <div className="zq-db-chip demo">
-                <span className="zq-db-dot" />
-                Demo database
+          {history.length === 0 && (
+            <div className="zq-topbar">
+              <div className="zq-topbar-left">
+                <div className="zq-topbar-eye">Query Engine</div>
+                <h1 className="zq-topbar-title">
+                  Ask your <span className="hl">data</span> anything
+                </h1>
               </div>
-            )}
-          </div>
+
+              {plan === 'free' && !dbConnected && (
+                <div className="zq-db-chip demo">
+                  <span className="zq-db-dot" />
+                  Demo database
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="zq-scroll">
             {bootLoading ? (
