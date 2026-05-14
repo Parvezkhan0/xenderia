@@ -10,9 +10,7 @@ const AUTH_ROUTES = ['/login', '/signup'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // TODO: Replace this with real Firebase session token check.
-  // Example: const token = request.cookies.get('firebase-token')?.value;
-  const isAuthenticated = false; // placeholder — always false until Firebase is wired
+  const isAuthenticated = !!request.cookies.get('firebase-token')?.value;
 
   // Redirect unauthenticated users away from protected routes
   if (PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
