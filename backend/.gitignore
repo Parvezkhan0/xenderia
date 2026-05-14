@@ -150,7 +150,6 @@ data/*.db
 data/*.sqlite*
 
 # FACT Cache files
-cache/
 .cache/
 *.cache
 
