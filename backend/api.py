@@ -916,12 +916,15 @@ Run with:
 
 import json
 import os
-import time
-import uuid
 import re
+import smtplib
+import time
 import traceback
-from pathlib import Path
+import uuid
 from contextlib import asynccontextmanager
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from pathlib import Path
 from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Query
@@ -1136,6 +1139,11 @@ class RazorpayOrderResponse(BaseModel):
 class PaymentSuccessResponse(BaseModel):
     status: str
     uid: str
+
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    message: str
 # ───────────────────────────────────────────────────────────────────────────
 
 
@@ -1730,3 +1738,36 @@ async def get_excel_sheet_preview(request: Request, body: ExcelPreviewRequest):
         return JSONResponse(status_code=400, content={"status": "failed", "error": str(e)})
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "failed", "error": f"Excel preview error: {e}"})
+
+
+# ---------------------------------------------------------------------------
+# Contact form endpoint
+# ---------------------------------------------------------------------------
+@app.post("/api/v1/contact")
+async def contact_form(body: ContactRequest):
+    smtp_user     = os.getenv("SMTP_EMAIL", "")
+    smtp_password = os.getenv("SMTP_PASSWORD", "")
+    contact_email = os.getenv("CONTACT_EMAIL", smtp_user)
+
+    if not smtp_user or not smtp_password:
+        raise HTTPException(status_code=500, detail="Email sending is not configured on the server.")
+
+    try:
+        msg = MIMEMultipart()
+        msg["From"]    = smtp_user
+        msg["To"]      = contact_email
+        msg["Reply-To"] = body.email
+        msg["Subject"] = f"Zentra Contact: {body.name}"
+        msg.attach(MIMEText(
+            f"Name:    {body.name}\nEmail:   {body.email}\n\nMessage:\n{body.message}",
+            "plain",
+        ))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+
+        return {"status": "sent", "message": "Message received. We'll get back to you soon."}
+    except Exception as e:
+        print(f"❌ Contact email failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send message. Please try again later.")
