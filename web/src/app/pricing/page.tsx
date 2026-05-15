@@ -631,7 +631,7 @@ export default function PricingPage() {
                 Pay via UPI, Google Pay, cards, or net banking. Cancel any time.
               </p>
             </div>
-            <a href="mailto:parvezkhankp0786@gmail.com" className="zp-bottom-cta">
+            <a href="/contact" className="zp-bottom-cta">
               Talk to us →
             </a>
           </div>
