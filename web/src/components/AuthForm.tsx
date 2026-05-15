@@ -23,9 +23,8 @@ interface AuthFormProps {
 // ---------------------------------------------------------------------------
 async function persistAuthCookie(user: { getIdToken: () => Promise<string> }) {
   const token = await user.getIdToken();
-  // 1-hour expiry matches Firebase token lifetime.
-  // layout.tsx will refresh it silently via onAuthStateChanged.
-  document.cookie = `firebase-token=${token}; path=/; SameSite=Strict; max-age=3600`;
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `firebase-token=${token}; path=/; SameSite=Lax; max-age=3600${secure}`;
 }
 
 export default function AuthForm({ mode }: AuthFormProps) {
