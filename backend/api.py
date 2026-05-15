@@ -917,15 +917,14 @@ Run with:
 import json
 import os
 import re
-import smtplib
 import time
 import traceback
 import uuid
 from contextlib import asynccontextmanager
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Optional, List
+
+import requests
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Query
 from fastapi.responses import JSONResponse
@@ -1400,7 +1399,6 @@ async def create_razorpay_order(request: Request):
     Returns: order_id, amount, currency
     Frontend will use order_id to open Razorpay modal.
     """
-    import requests
 
     uid = _resolve_uid_from_request(request, require_auth_in_production=True)
 
@@ -1745,29 +1743,38 @@ async def get_excel_sheet_preview(request: Request, body: ExcelPreviewRequest):
 # ---------------------------------------------------------------------------
 @app.post("/api/v1/contact")
 async def contact_form(body: ContactRequest):
-    smtp_user     = os.getenv("SMTP_EMAIL", "")
-    smtp_password = os.getenv("SMTP_PASSWORD", "")
-    contact_email = os.getenv("CONTACT_EMAIL", smtp_user)
+    api_key       = os.getenv("RESEND_API_KEY", "")
+    contact_email = os.getenv("CONTACT_EMAIL", "")
+    from_email    = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 
-    if not smtp_user or not smtp_password:
+    if not api_key:
         raise HTTPException(status_code=500, detail="Email sending is not configured on the server.")
+    if not contact_email:
+        raise HTTPException(status_code=500, detail="CONTACT_EMAIL is not configured on the server.")
 
     try:
-        msg = MIMEMultipart()
-        msg["From"]    = smtp_user
-        msg["To"]      = contact_email
-        msg["Reply-To"] = body.email
-        msg["Subject"] = f"Zentra Contact: {body.name}"
-        msg.attach(MIMEText(
-            f"Name:    {body.name}\nEmail:   {body.email}\n\nMessage:\n{body.message}",
-            "plain",
-        ))
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(smtp_user, smtp_password)
-            server.send_message(msg)
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from":     from_email,
+                "to":       [contact_email],
+                "reply_to": body.email,
+                "subject":  f"Zentra Contact: {body.name}",
+                "text":     f"Name:    {body.name}\nEmail:   {body.email}\n\nMessage:\n{body.message}",
+            },
+            timeout=10,
+        )
+        if not resp.ok:
+            print(f"❌ Resend error {resp.status_code}: {resp.text}")
+            raise HTTPException(status_code=500, detail="Failed to send message. Please try again later.")
 
         return {"status": "sent", "message": "Message received. We'll get back to you soon."}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Contact email failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to send message. Please try again later.")
