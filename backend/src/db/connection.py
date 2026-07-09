@@ -869,6 +869,13 @@ class MultiTenantManager:
         except ImportError:
             raise RuntimeError("asyncpg not installed. Run: pip install asyncpg")
 
+        # Close any existing pool for this uid before replacing it — otherwise
+        # reconnecting (e.g. updated credentials) orphans the old asyncpg pool
+        # with its connections still open, leaking until process restart.
+        existing = self._managers.get(uid)
+        if existing is not None:
+            await existing.close()
+
         manager = await PostgreSQLManager.create(
             host=credentials["host"],
             port=credentials.get("port", 5432),

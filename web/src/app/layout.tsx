@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zentra — Exact Financial Data, Instantly",
+  title: "Zenntraa — Exact Financial Data, Instantly",
   description:
     "Natural language financial queries for fintech finance teams. Exact numbers in milliseconds — no SQL, no dashboards, no guessing.",
   keywords: [
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     "natural language SQL",
     "fintech analytics",
     "AI finance queries",
-    "Zentra",
+    "Zenntraa",
     "cache-first",
   ],
   icons: {
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Zentra — Exact Financial Data, Instantly",
+    title: "Zenntraa — Exact Financial Data, Instantly",
     description:
       "Ask financial questions in plain English. Get exact SQL-backed answers in milliseconds, not approximations.",
     type: "website",

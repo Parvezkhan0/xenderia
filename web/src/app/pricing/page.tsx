@@ -16,17 +16,16 @@ const PLANS = [
     name: 'Starter',
     price: 'Free',
     period: '',
-    pitch: 'Try Zentra with no commitment. Perfect for solo analysts and personal projects.',
+    pitch: 'Try Zenntraa with no commitment. Perfect for solo analysts and personal projects.',
     cta: 'Get started free',
     hot: false,
     features: [
       '50 queries / month',
-      'SQLite demo database',
+      'Connect your own PostgreSQL database',
       'Structured table output',
       'Session query history',
-      'Community support',
     ],
-    missing: ['Custom PostgreSQL database', 'Cache warming', 'Email support'],
+    missing: ['Cache warming', 'Email support'],
   },
   {
     name: 'Pro',
@@ -53,8 +52,7 @@ const COMPARE_ROWS = [
   ['Monthly queries',            '50',        '1,000'],
   ['Cache hits billed',          'Never',     'Never'],
   ['Session query history',      '✓',         '✓'],
-  ['SQLite demo database',       '✓',         '✓'],
-  ['Custom PostgreSQL database', '—',         '✓'],
+  ['Connect your own PostgreSQL', '✓',        '✓'],
   ['Structured table output',    '✓',         '✓'],
   ['Cache warming',              '—',         '✓'],
   ['User-isolated cache keys',   '—',         '✓'],
@@ -65,15 +63,15 @@ const COMPARE_ROWS = [
 const FAQS = [
   {
     q: 'What counts as a query?',
-    a: 'Any call to Zentra that reaches the AI or the database. Cache hits are always free and do not count against your quota — you only spend queries on cache misses.',
+    a: 'Any call to Zenntraa that reaches the AI or the database. Cache hits are always free and do not count against your quota — you only spend queries on cache misses.',
   },
   {
-    q: 'What databases does Zentra support?',
-    a: 'The free plan queries the built-in SQLite demo database so you can experience the system immediately. Pro unlocks connection to your own live PostgreSQL database with secure, read-only access.',
+    q: 'What databases does Zenntraa support?',
+    a: 'Both plans let you connect your own live PostgreSQL database with secure, read-only access. The free plan includes 50 queries per month; Pro raises that to 1,000 and adds cache warming and user-isolated cache keys.',
   },
   {
     q: 'How does caching reduce my costs?',
-    a: 'Zentra caches the system prompt, schema definitions, and query results. Repeated queries are served from memory — zero AI tokens billed, sub-50ms response. On average teams see a 90% reduction in token costs within the first week.',
+    a: 'Zenntraa caches the system prompt, schema definitions, and query results. Repeated queries are served from memory — zero AI tokens billed, sub-50ms response. On average teams see a 90% reduction in token costs within the first week.',
   },
   {
     q: 'What is cache warming?',
@@ -97,18 +95,10 @@ declare global {
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
-const RZ_KEY   = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? '';
-
-function loadRazorpayScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window !== 'undefined' && window.Razorpay) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    s.onload  = () => resolve();
-    s.onerror = () => reject(new Error('Razorpay script failed to load'));
-    document.body.appendChild(s);
-  });
-}
+// Razorpay hosted recurring-subscription checkout link.
+// Falls back to the live link if the env var is not set.
+const SUBSCRIPTION_URL =
+  process.env.NEXT_PUBLIC_RAZORPAY_SUBSCRIPTION_URL ?? 'https://rzp.io/rzp/6gbx9BJy';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -117,7 +107,6 @@ export default function PricingPage() {
   const router = useRouter();
   const [uid, setUid]           = useState<string | null>(null);
   const [email, setEmail]       = useState<string>('');
-  const [name, setName]         = useState<string>('');
   const [authChecked, setAuthChecked] = useState(false);
   const [paying, setPaying]     = useState(false);
   const [payError, setPayError] = useState('');
@@ -128,7 +117,6 @@ export default function PricingPage() {
     const unsub = onAuthStateChanged(getAuth(), async (user) => {
       setUid(user?.uid ?? null);
       setEmail(user?.email ?? '');
-      setName(user?.displayName ?? '');
       setAuthChecked(true);
 
       if (user) {
@@ -156,86 +144,23 @@ export default function PricingPage() {
   };
 
   // ── "Get Pro" handler ────────────────────────────────────────────────────
-  const handleGetPro = async () => {
+  const handleGetPro = () => {
     setPayError('');
 
-    // Not logged in → go to signup with plan=pro
+    // Must be signed in first: the hosted subscription link is static/shared
+    // and cannot carry the Firebase UID, so the backend links the resulting
+    // subscription to this account BY THE EMAIL the user pays with — which
+    // must match their Zenntraa account email. Force account creation first.
     if (!uid) {
       router.push('/signup?plan=pro');
       return;
     }
 
-    if (!RZ_KEY) {
-      // Key not configured yet — redirect to signup as fallback
-      router.push('/signup?plan=pro');
-      return;
-    }
-
+    // Redirect to Razorpay's hosted recurring-subscription checkout.
+    // Pro is granted asynchronously by the subscription webhook once the
+    // first charge succeeds (see backend billing.handle_razorpay_webhook).
     setPaying(true);
-    try {
-      // 1. Get auth token
-      const token = await getAuth().currentUser?.getIdToken() ?? '';
-
-      // 2. Ask backend to create a Razorpay order
-      // ✅ FIXED: No body sent, backend reads uid from Authorization header
-      const res = await fetch(`${BASE_URL}/api/v1/razorpay/create-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail ?? 'Failed to create order');
-      }
-
-      const { order_id, amount, currency } = await res.json();
-
-      // 3. Load Razorpay script and open modal
-      await loadRazorpayScript();
-
-      const options = {
-        key:         RZ_KEY,
-        amount,                           // in paise
-        currency,
-        name:        'Zentra',
-        description: 'Pro Plan — 1,000 queries/month',
-        image:       '/logo.png',
-        order_id,
-        prefill: { name, email },
-        notes:   { user_id: uid },        // backend reads this on webhook
-        theme:   { color: '#7c83f5' },
-        modal: {
-          ondismiss: () => setPaying(false),
-        },
-        handler: async (response: any) => {
-          // Payment captured — directly upgrade plan in backend
-          try {
-            const t = await getAuth().currentUser?.getIdToken() ?? '';
-            await fetch(`${BASE_URL}/api/v1/razorpay/payment-success`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${t}` },
-            });
-          } catch (e) {
-            console.error('Plan upgrade call failed:', e);
-          }
-          router.push('/dashboard?payment=success');
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', (resp: any) => {
-        setPayError(resp.error?.description ?? 'Payment failed. Please try again.');
-        setPaying(false);
-      });
-      rzp.open();
-
-    } catch (err: any) {
-      setPayError(err.message ?? 'Something went wrong. Please try again.');
-      setPaying(false);
-    }
+    window.location.href = SUBSCRIPTION_URL;
   };
   // ────────────────────────────────────────────────────────────────────────
 
@@ -484,7 +409,7 @@ export default function PricingPage() {
               <span className="hl">Not for cache hits.</span>
             </h1>
             <p className="zp-sub">
-              Cache hits are always free. You only spend quota when Zentra
+              Cache hits are always free. You only spend quota when Zenntraa
               has to do real work — and it caches that too.
             </p>
             <div className="zp-cache-pill">
@@ -525,17 +450,33 @@ export default function PricingPage() {
                       Go to Dashboard →
                     </button>
                   ) : (
-                    // Not Pro — open Razorpay checkout
-                    <button
-                      className="zp-cta zp-cta-hot"
-                      onClick={handleGetPro}
-                      disabled={!authChecked || paying}
-                    >
-                      {paying
-                        ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
-                        : null}
-                      {paying ? 'Opening checkout…' : plan.cta}
-                    </button>
+                    // Not Pro — redirect to Razorpay hosted subscription
+                    <>
+                      <button
+                        className="zp-cta zp-cta-hot"
+                        onClick={handleGetPro}
+                        disabled={!authChecked || paying}
+                      >
+                        {paying
+                          ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
+                          : null}
+                        {paying ? 'Opening checkout…' : plan.cta}
+                      </button>
+                      {email && (
+                        <div style={{
+                          marginTop: 10,
+                          fontSize: 11,
+                          lineHeight: 1.5,
+                          color: 'var(--dim)',
+                          fontFamily: 'var(--mono)',
+                          textAlign: 'center',
+                        }}>
+                          Pay with{' '}
+                          <strong style={{ color: 'var(--muted)' }}>{email}</strong>
+                          {' '}to link your subscription.
+                        </div>
+                      )}
+                    </>
                   )
                 ) : (
                   <button className="zp-cta zp-cta-default" onClick={handleGetFree}>

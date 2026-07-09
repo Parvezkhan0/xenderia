@@ -13,7 +13,7 @@ const COMPANIES = [
 
 const TESTIMONIALS = [
   {
-    quote: "We replaced our entire RAG pipeline with Zentra in a week. Query accuracy went from 'close enough' to exact. Our analysts stopped second-guessing the numbers.",
+    quote: "We replaced our entire RAG pipeline with Zenntraa in a week. Query accuracy went from 'close enough' to exact. Our analysts stopped second-guessing the numbers.",
     name: 'James Whitfield',
     role: 'Head of Data Engineering',
     company: 'Meridian Capital',
@@ -43,7 +43,7 @@ const TESTIMONIALS = [
     size: 'normal',
   },
   {
-    quote: "I was skeptical about ditching vector search. But Zentra's deterministic tools mean we never get hallucinated revenue figures. That's non-negotiable in finance.",
+    quote: "I was skeptical about ditching vector search. But Zenntraa's deterministic tools mean we never get hallucinated revenue figures. That's non-negotiable in finance.",
     name: 'Sara Lindqvist',
     role: 'Quantitative Analyst',
     company: 'Aurelian Group',
@@ -63,7 +63,7 @@ const TESTIMONIALS = [
     size: 'normal',
   },
   {
-    quote: "Our junior analysts can now query financial data without knowing a single line of SQL. Zentra just works — and keeps working even under load.",
+    quote: "Our junior analysts can now query financial data without knowing a single line of SQL. Zenntraa just works — and keeps working even under load.",
     name: 'Adaeze Okafor',
     role: 'Financial Analyst',
     company: 'Pinebrook Ventures',
@@ -511,7 +511,7 @@ export default function SocialProofSection() {
               <span className="hl">Now don't.</span>
             </h2>
             <p className={`zsp-sub ${headIn ? 'vis' : ''}`}>
-              A small group of data and finance teams helped us shape Zentra in beta.
+              A small group of data and finance teams helped us shape Zenntraa in beta.
               Here's what they said.
             </p>
           </div>

@@ -86,21 +86,21 @@ export default function TermsPage() {
           <div className="legal-section">
             <h2 className="legal-h2">1. Acceptance of Terms</h2>
             <p className="legal-p">
-              By accessing or using Zentra ("the Service", "we", "us"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service. These terms apply to all visitors, users, and others who access or use Zentra.
+              By accessing or using Zenntraa ("the Service", "we", "us"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service. These terms apply to all visitors, users, and others who access or use Zenntraa.
             </p>
           </div>
 
           <div className="legal-section">
             <h2 className="legal-h2">2. Description of Service</h2>
             <p className="legal-p">
-              Zentra is an AI-powered financial data query platform that allows users to interact with databases using natural language. The Service includes a query engine, caching layer, dashboard, and associated APIs. We offer a free tier and paid subscription plans.
+              Zenntraa is an AI-powered financial data query platform that allows users to interact with databases using natural language. The Service includes a query engine, caching layer, dashboard, and associated APIs. We offer a free tier and paid subscription plans.
             </p>
           </div>
 
           <div className="legal-section">
             <h2 className="legal-h2">3. Account Registration</h2>
             <p className="legal-p">
-              To use Zentra you must create an account using a valid email address or Google Sign-In. You are responsible for:
+              To use Zenntraa you must create an account using a valid email address or Google Sign-In. You are responsible for:
             </p>
             <ul className="legal-ul">
               <li>Maintaining the confidentiality of your account credentials</li>
@@ -115,7 +115,7 @@ export default function TermsPage() {
           <div className="legal-section">
             <h2 className="legal-h2">4. Subscription Plans & Billing</h2>
             <p className="legal-p">
-              Zentra offers a Free plan (50 queries/month) and a Pro plan (1,000 queries/month) with additional features including custom PostgreSQL connections. Billing is handled via Razorpay. By subscribing to a paid plan you authorize us to charge your payment method on a recurring basis.
+              Zenntraa offers a Free plan (50 queries/month) and a Pro plan (1,000 queries/month) with additional features including custom PostgreSQL connections. Billing is handled via Razorpay. By subscribing to a paid plan you authorize us to charge your payment method on a recurring basis.
             </p>
             <p className="legal-p">
               All fees are non-refundable except where required by applicable law. We reserve the right to change pricing with 30 days' notice. Downgrading mid-cycle does not entitle you to a partial refund. Cache hits do not count against your monthly quota.
@@ -141,7 +141,7 @@ export default function TermsPage() {
           <div className="legal-section">
             <h2 className="legal-h2">6. Data You Submit</h2>
             <p className="legal-p">
-              When you connect a database or upload files, you retain full ownership of your data. By submitting data to Zentra you grant us a limited, non-exclusive licence to process it solely for the purpose of providing the Service to you. We do not use your proprietary data to train AI models or share it with third parties.
+              When you connect a database or upload files, you retain full ownership of your data. By submitting data to Zenntraa you grant us a limited, non-exclusive licence to process it solely for the purpose of providing the Service to you. We do not use your proprietary data to train AI models or share it with third parties.
             </p>
             <p className="legal-p">
               You are responsible for ensuring you have the right to submit any data you provide, including database contents and uploaded files.
@@ -151,7 +151,7 @@ export default function TermsPage() {
           <div className="legal-section">
             <h2 className="legal-h2">7. Intellectual Property</h2>
             <p className="legal-p">
-              The Zentra name, logo, software, and all associated content are the intellectual property of Zentra and its licensors. Nothing in these Terms grants you the right to use our trademarks or branding without prior written permission.
+              The Zenntraa name, logo, software, and all associated content are the intellectual property of Zenntraa and its licensors. Nothing in these Terms grants you the right to use our trademarks or branding without prior written permission.
             </p>
           </div>
 
@@ -168,7 +168,7 @@ export default function TermsPage() {
           <div className="legal-section">
             <h2 className="legal-h2">9. Limitation of Liability</h2>
             <p className="legal-p">
-              To the maximum extent permitted by law, Zentra and its team shall not be liable for any indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, or business — arising from your use of the Service, even if we have been advised of the possibility of such damages.
+              To the maximum extent permitted by law, Zenntraa and its team shall not be liable for any indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, or business — arising from your use of the Service, even if we have been advised of the possibility of such damages.
             </p>
             <p className="legal-p">
               Our total liability to you for any claim arising from these Terms or your use of the Service shall not exceed the amount you paid us in the 12 months preceding the claim.

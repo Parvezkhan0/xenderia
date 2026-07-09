@@ -146,7 +146,7 @@ function QuotaBanner({ plan, onUpgrade, onDismiss }: {
         </div>
         <div className="quota-banner-msg">
           {isPro
-            ? 'You\'ve used all 1,000 queries for this month. Your quota resets on the 1st. Cache hits are still free.'
+            ? 'You\'ve used all 1,000 queries for this month. Your quota resets on the 1st.'
             : 'Upgrade to Pro for 1,000 queries/month and connect your own PostgreSQL database.'}
         </div>
       </div>
@@ -171,10 +171,13 @@ export default function QueryPage() {
   const [loading, setLoading] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorKind, setErrorKind] = useState<'error' | 'rate_limit'>('error');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
   const [plan, setPlan] = useState<'free' | 'pro'>('free');
   const [quotaBanner, setQuotaBanner] = useState<{ plan: 'free' | 'pro' } | null>(null);
+  const [checkoutStatus, setCheckoutStatus] =
+    useState<'idle' | 'processing' | 'success' | 'timeout'>('idle');
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -240,10 +243,58 @@ export default function QueryPage() {
     };
 
     syncStateFromBackend();
-    window.addEventListener('zentra:query', syncStateFromBackend);
+    window.addEventListener('zenntraa:query', syncStateFromBackend);
 
     return () => {
-      window.removeEventListener('zentra:query', syncStateFromBackend);
+      window.removeEventListener('zenntraa:query', syncStateFromBackend);
+    };
+  }, []);
+
+  // Post-checkout polling: when the user returns from Razorpay with
+  // ?checkout=processing, Pro is granted asynchronously by the subscription
+  // webhook and may not be reflected yet. Poll entitlements until it flips to
+  // 'pro' (or time out), so the user sees a clear status instead of appearing
+  // as a free user during the webhook race.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') !== 'processing') return;
+
+    // Strip the param so a manual refresh doesn't re-trigger the flow.
+    window.history.replaceState(null, '', '/dashboard/query');
+
+    let cancelled = false;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 10;   // ~30s total
+    const INTERVAL_MS = 3000;
+
+    setCheckoutStatus('processing');
+
+    const poll = async () => {
+      if (cancelled) return;
+      attempts += 1;
+
+      const ent = await getEntitlements();
+      if (cancelled) return;
+
+      if (!isAPIError(ent) && ent.plan === 'pro') {
+        setPlan('pro');
+        setCheckoutStatus('success');
+        // Refresh db status / history now that Pro is active.
+        window.dispatchEvent(new Event('zenntraa:query'));
+        return;
+      }
+
+      if (attempts >= MAX_ATTEMPTS) {
+        setCheckoutStatus('timeout');
+        return;
+      }
+      setTimeout(poll, INTERVAL_MS);
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -270,11 +321,15 @@ export default function QueryPage() {
         if (quotaPlan === 'free') {
           setTimeout(() => router.push('/pricing'), 2500);
         }
+      } else if (result.status === 429) {
+        setErrorKind('rate_limit');
+        setError(result.message);
       } else {
+        setErrorKind('error');
         setError(result.message);
       }
     } else {
-      window.dispatchEvent(new Event('zentra:query'));
+      window.dispatchEvent(new Event('zenntraa:query'));
     }
 
     setLoading(false);
@@ -687,6 +742,10 @@ export default function QueryPage() {
           border-radius: 10px; font-family: var(--mono); font-size: 11.5px; color: #f87171; flex-shrink: 0;
         }
 
+        .zq-error-warn {
+          background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.18); color: var(--amber);
+        }
+
         .quota-banner {
           margin: 0 28px 0;
           padding: 14px 16px;
@@ -882,8 +941,8 @@ export default function QueryPage() {
                 </div>
                 <p className="zq-empty-sub">
                   {dbConnected
-                    ? 'Type in plain English. Zentra queries your PostgreSQL database and returns exact results.'
-                    : 'Type in plain English. Zentra converts it to SQL and returns exact answers — no guessing.'}
+                    ? 'Type in plain English. Zenntraa queries your PostgreSQL database and returns exact results.'
+                    : 'Type in plain English. Zenntraa converts it to SQL and returns exact answers — no guessing.'}
                 </p>
 
                 <div className="zq-suggestions">
@@ -909,7 +968,7 @@ export default function QueryPage() {
                       <div className="zq-ans-avatar">Z</div>
                       <div className="zq-ans-body">
                         <div className="zq-ans-hdr">
-                          <span className="zq-ans-name">Zentra</span>
+                          <span className="zq-ans-name">Zenntraa</span>
                           <CacheBadge hit={item.response.cache_hit} latency={item.response.latency_ms} />
                         </div>
                         {renderAnswer(item.response.answer)}
@@ -943,7 +1002,46 @@ export default function QueryPage() {
             )}
           </div>
 
-          {error && <div className="zq-error">⚠ {error}</div>}
+          {error && (
+            <div className={`zq-error ${errorKind === 'rate_limit' ? 'zq-error-warn' : ''}`}>
+              {errorKind === 'rate_limit' ? '⏱' : '⚠'} {error}
+            </div>
+          )}
+
+          {checkoutStatus !== 'idle' && (
+            <div className="quota-banner">
+              <div className="quota-banner-icon">
+                {checkoutStatus === 'success' ? '🎉' : checkoutStatus === 'timeout' ? '⏳' : '⚡'}
+              </div>
+              <div className="quota-banner-body">
+                <div className="quota-banner-title">
+                  {checkoutStatus === 'processing' && 'Activating your Pro subscription…'}
+                  {checkoutStatus === 'success' && "You're on Pro! 🎉"}
+                  {checkoutStatus === 'timeout' && 'Still activating your subscription'}
+                </div>
+                <div className="quota-banner-msg">
+                  {checkoutStatus === 'processing' &&
+                    'Payment received. This usually takes a few seconds — hang tight.'}
+                  {checkoutStatus === 'success' &&
+                    'Your Pro features are now unlocked — 1,000 queries/month.'}
+                  {checkoutStatus === 'timeout' &&
+                    'Your payment went through, but Pro is taking a moment to activate. Refresh in a bit, or contact support if it doesn\'t update.'}
+                </div>
+              </div>
+              <div className="quota-banner-actions">
+                {checkoutStatus === 'processing' ? (
+                  <Loader2
+                    size={16}
+                    style={{ animation: 'spin .8s linear infinite', color: 'var(--accent)' }}
+                  />
+                ) : (
+                  <button className="quota-dismiss-btn" onClick={() => setCheckoutStatus('idle')}>
+                    Dismiss
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {quotaBanner && (
             <QuotaBanner

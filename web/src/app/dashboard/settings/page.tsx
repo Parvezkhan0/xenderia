@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Database, CheckCircle, XCircle, Loader2, Eye, EyeOff, Shield, Zap, Lock, Server } from 'lucide-react';
 
 type TestStatus    = 'idle' | 'testing'    | 'success' | 'error';
-type ConnectStatus = 'idle' | 'connecting' | 'connected' | 'error' | 'upgrade';
+type ConnectStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
 interface FormState {
   db_type: 'postgresql';
@@ -28,7 +27,6 @@ interface DatabaseStatusResponse {
 }
 
 export default function SettingsPage() {
-  const router = useRouter();
   const [form, setForm] = useState<FormState>({
     db_type: 'postgresql',
     host: '', port: '5432', database: '', username: '', password: '',
@@ -38,6 +36,7 @@ export default function SettingsPage() {
   const [testMessage, setTestMessage]       = useState('');
   const [connectStatus, setConnectStatus]   = useState<ConnectStatus>('idle');
   const [connectMessage, setConnectMessage] = useState('');
+  const [disconnecting, setDisconnecting]   = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -123,11 +122,6 @@ export default function SettingsPage() {
       });
       const data = await res.json();
 
-      if (res.status === 402) {
-        setConnectStatus('upgrade');
-        return;
-      }
-
       if (res.ok && data.success) {
         setConnectStatus('connected');
         setConnectMessage(data.message ?? 'Database connected successfully');
@@ -141,6 +135,38 @@ export default function SettingsPage() {
     } catch {
       setConnectStatus('error');
       setConnectMessage('Cannot reach backend. Is it running?');
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!connected || disconnecting) return;
+    setDisconnecting(true);
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const token = await getAuth().currentUser?.getIdToken() ?? '';
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/database/disconnect`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setConnectStatus('idle');
+        setConnectMessage('');
+        setTestStatus('idle');
+        setTestMessage('');
+        setForm({ db_type: 'postgresql', host: '', port: '5432', database: '', username: '', password: '' });
+      } else {
+        setConnectStatus('error');
+        setConnectMessage(data.message ?? data.detail ?? 'Failed to disconnect');
+      }
+    } catch {
+      setConnectStatus('error');
+      setConnectMessage('Cannot reach backend. Is it running?');
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -481,7 +507,26 @@ export default function SettingsPage() {
           background: var(--as);
         }
 
+        .zs-btn-disconnect {
+          display: flex; align-items: center; gap: 8px;
+          padding: 10px 20px;
+          background: transparent;
+          border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 10px;
+          font-family: var(--sans);
+          font-size: 13.5px; font-weight: 600;
+          color: #f87171; cursor: pointer;
+          transition: all 0.2s;
+          letter-spacing: -0.01em;
+        }
+
+        .zs-btn-disconnect:hover:not(:disabled) {
+          border-color: rgba(239,68,68,0.5);
+          background: rgba(239,68,68,0.06);
+        }
+
         .zs-btn-test:disabled { opacity: 0.35; cursor: not-allowed; }
+        .zs-btn-disconnect:disabled { opacity: 0.35; cursor: not-allowed; }
 
         .zs-btn-connect {
           display: flex; align-items: center; gap: 8px;
@@ -588,7 +633,7 @@ export default function SettingsPage() {
           <div className="zs-hdr-eye">Settings</div>
           <h1 className="zs-hdr-title">Connect your database</h1>
           <p className="zs-hdr-sub">
-            Give Zentra read-only access to your PostgreSQL database. It will translate
+            Give Zenntraa read-only access to your PostgreSQL database. It will translate
             plain English queries into SQL and return exact results.
           </p>
         </div>
@@ -618,24 +663,6 @@ export default function SettingsPage() {
                   <div className="zs-connected-text">Database connected</div>
                   <div className="zs-connected-sub">{form.database}</div>
                 </div>
-              </div>
-            )}
-
-            {connectStatus === 'upgrade' && (
-              <div className="zs-upgrade-banner">
-                <div className="zs-upgrade-icon">
-                  <Zap size={16} />
-                </div>
-                <div className="zs-upgrade-body">
-                  <div className="zs-upgrade-title">Pro plan required</div>
-                  <div className="zs-upgrade-msg">
-                    Custom PostgreSQL connections are available on the Pro plan — 1,000 queries/month for $29.
-                  </div>
-                </div>
-                <button className="zs-upgrade-btn" onClick={() => router.push('/pricing')}>
-                  <Zap size={12} />
-                  Upgrade
-                </button>
               </div>
             )}
 
@@ -736,7 +763,7 @@ export default function SettingsPage() {
               <div className="zs-security">
                 <Shield size={15} className="zs-security-icon" />
                 <p className="zs-security-text">
-                  <strong>Read-only access only.</strong> Zentra never writes to your database.
+                  <strong>Read-only access only.</strong> Zenntraa never writes to your database.
                   Credentials are used only to establish the connection and are stored for persistent reconnects during this MVP phase.
                 </p>
               </div>
@@ -786,6 +813,19 @@ export default function SettingsPage() {
                     : <Database size={14} />}
                   {connectStatus === 'connecting' ? 'Connecting…' : connected ? 'Connected' : 'Connect database'}
                 </button>
+
+                {connected && (
+                  <button
+                    className="zs-btn-disconnect"
+                    onClick={handleDisconnect}
+                    disabled={disconnecting}
+                  >
+                    {disconnecting
+                      ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
+                      : <XCircle size={14} />}
+                    {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+                  </button>
+                )}
               </div>
 
             </div>

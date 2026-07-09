@@ -1,5 +1,5 @@
 # """
-# Zentra Billing — Razorpay + Firebase Firestore
+# Zenntraa Billing — Razorpay + Firebase Firestore
 # ===============================================
 # Handles webhook events, plan storage, monthly quota tracking,
 # persistent per-user database connection storage,
@@ -418,7 +418,7 @@
 #         logger.debug(f"Unhandled Razorpay event: {event}")
 
 """
-Zentra Billing — Razorpay + Firebase Firestore
+Zenntraa Billing — Razorpay + Firebase Firestore
 ===============================================
 Handles webhook events, plan storage, monthly quota tracking,
 persistent per-user database connection storage,
@@ -433,7 +433,7 @@ Collections:
   user_query_history/{user_id}/items  → saved query history entries
 
 Plans:
-  free  → 50 queries/month,  SQLite demo only
+  free  → 50 queries/month,   connect your own PostgreSQL
   pro   → 1,000 queries/month, PostgreSQL, cache warming, $29/mo
 """
 
@@ -454,7 +454,7 @@ PLANS: dict[str, dict] = {
     "free": {
         "queries_per_month": 50,
         "rate_limit_per_min": 10,
-        "postgres": False,
+        "postgres": True,
         "cache_warming": False,
         "user_isolated_cache": False,
         "analytics": False,
@@ -569,6 +569,76 @@ def cancel_subscription(user_id: str) -> None:
     except Exception as e:
         logger.error(f"Firestore cancel error: {e}")
         raise
+
+
+# ---------------------------------------------------------------------------
+# Subscription → UID mapping helpers
+# ---------------------------------------------------------------------------
+# The hosted Razorpay subscription link is static/shared, so subscription
+# webhooks do NOT carry the Firebase UID in their notes. We therefore map a
+# subscription back to a user by:
+#   1. subscription.notes.user_id  (only present if you switch to API-created subs)
+#   2. rz_subscriptions/{subscription_id} reverse index (written on first grant)
+#   3. the payer's email (subscription.charged carries payload.payment.entity.email)
+
+def get_uid_by_email(email: str) -> str:
+    """Resolve a Firebase UID from an email address. Returns '' if not found."""
+    if not email:
+        return ""
+    try:
+        from firebase_admin import auth
+        _db()  # ensure the firebase_admin app is initialized
+        return auth.get_user_by_email(email).uid
+    except Exception as e:
+        logger.warning(f"get_uid_by_email: no user for email={email}: {e}")
+        return ""
+
+
+def index_subscription(subscription_id: str, user_id: str) -> None:
+    """Store a subscription_id → uid reverse index so later events that carry
+    no email (e.g. cancellations) can still be mapped back to a user."""
+    if not subscription_id or not user_id:
+        return
+    try:
+        _db().collection("rz_subscriptions").document(subscription_id).set({
+            "uid":        user_id,
+            "updated_at": datetime.utcnow().isoformat(),
+        }, merge=True)
+    except Exception as e:
+        logger.error(f"index_subscription error: {e}")
+
+
+def get_uid_by_subscription(subscription_id: str) -> str:
+    """Look up the uid that owns a Razorpay subscription_id. Returns '' if unknown."""
+    if not subscription_id:
+        return ""
+    try:
+        doc = _db().collection("rz_subscriptions").document(subscription_id).get()
+        if doc.exists:
+            return doc.to_dict().get("uid", "")
+    except Exception as e:
+        logger.error(f"get_uid_by_subscription error: {e}")
+    return ""
+
+
+def _resolve_subscription_uid(payload: dict) -> tuple[str, dict]:
+    """
+    Resolve (uid, subscription_entity) for a Razorpay subscription webhook.
+    uid is '' when the subscription cannot be matched to any Zenntraa account.
+    """
+    sub = payload.get("payload", {}).get("subscription", {}).get("entity", {}) or {}
+    pay = payload.get("payload", {}).get("payment", {}).get("entity", {}) or {}
+
+    uid = (sub.get("notes") or {}).get("user_id", "")
+    if uid:
+        return uid, sub
+
+    uid = get_uid_by_subscription(sub.get("id", ""))
+    if uid:
+        return uid, sub
+
+    uid = get_uid_by_email(pay.get("email", ""))
+    return uid, sub
 
 
 # ---------------------------------------------------------------------------
@@ -794,41 +864,65 @@ def verify_razorpay_signature(payload_bytes: bytes, signature: str, secret: str)
 
 def handle_razorpay_webhook(payload: dict) -> None:
     """
-    Handles Razorpay payment webhook events.
+    Handles Razorpay webhook events for the recurring Pro subscription.
 
-    payment.captured  → upgrade user to pro  ← this fires for one-time orders
-    payment.failed    → log only
-    subscription.*    → handled if you switch to subscriptions later
+    Grant Pro:
+      subscription.authenticated / subscription.activated / subscription.active /
+      subscription.charged / subscription.resumed
+      (subscription.charged also fires on every monthly renewal → keeps Pro active)
 
-    Firebase UID must be in order notes: { user_id: FIREBASE_UID }
+    Revoke Pro:
+      subscription.cancelled / subscription.completed /
+      subscription.halted / subscription.paused
+
+    UID mapping: the hosted subscription link cannot carry the Firebase UID, so
+    users are matched to their subscription by the email they pay with — see
+    _resolve_subscription_uid. Legacy one-time payment.captured is still handled
+    for accounts upgraded via the old flow.
     """
     event = payload.get("event", "")
 
-    if event == "payment.captured":
-        entity        = payload.get("payload", {}).get("payment", {}).get("entity", {})
-        notes         = entity.get("notes", {})
-        user_id       = notes.get("user_id", "")
-        rz_payment_id = entity.get("id", "")
-        rz_order_id   = entity.get("order_id", "")
+    GRANT_EVENTS = (
+        "subscription.authenticated",
+        "subscription.activated",
+        "subscription.active",
+        "subscription.charged",
+        "subscription.resumed",
+    )
+    REVOKE_EVENTS = (
+        "subscription.cancelled",
+        "subscription.completed",
+        "subscription.halted",
+        "subscription.paused",
+    )
 
-        if not user_id:
-            logger.warning("payment.captured: missing user_id in notes — skipping")
+    if event in GRANT_EVENTS:
+        uid, sub = _resolve_subscription_uid(payload)
+        if not uid:
+            logger.warning(f"{event}: could not resolve uid (sub={sub.get('id')}) — skipping")
             return
+        sub_id = sub.get("id", "")
+        upsert_subscription(uid, "pro", sub.get("customer_id", ""), sub_id, "active")
+        index_subscription(sub_id, uid)
+        logger.info(f"{event}: uid={uid} → pro (sub={sub_id})")
 
-        upsert_subscription(user_id, "pro", "", rz_order_id, "active")
-        logger.info(f"payment.captured: uid={user_id} → pro (payment={rz_payment_id})")
+    elif event in REVOKE_EVENTS:
+        uid, sub = _resolve_subscription_uid(payload)
+        if not uid:
+            logger.warning(f"{event}: could not resolve uid (sub={sub.get('id')}) — skipping")
+            return
+        cancel_subscription(uid)
+        logger.info(f"{event}: uid={uid} → free (sub={sub.get('id')})")
 
-    elif event in ("subscription.activated", "subscription.charged"):
-        entity  = payload.get("payload", {}).get("subscription", {}).get("entity", {})
+    # ── Legacy one-time payment (accounts upgraded before subscriptions) ──
+    elif event == "payment.captured":
+        entity  = payload.get("payload", {}).get("payment", {}).get("entity", {})
         user_id = entity.get("notes", {}).get("user_id", "")
-        if user_id:
-            upsert_subscription(user_id, "pro", entity.get("customer_id", ""), entity.get("id", ""), "active")
-
-    elif event in ("subscription.completed", "subscription.cancelled", "subscription.halted"):
-        entity  = payload.get("payload", {}).get("subscription", {}).get("entity", {})
-        user_id = entity.get("notes", {}).get("user_id", "")
-        if user_id:
-            cancel_subscription(user_id)
+        if not user_id:
+            logger.warning("payment.captured: no user_id in notes — skipping (expected for subscription flow)")
+            return
+        upsert_subscription(user_id, "pro", "", entity.get("order_id", ""), "active")
+        logger.info(f"payment.captured: uid={user_id} → pro (payment={entity.get('id', '')})")
 
     elif event == "payment.failed":
         logger.warning("payment.failed received — no action taken")

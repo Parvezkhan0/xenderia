@@ -291,7 +291,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="hero-sub">
-              Zentra lets finance teams query revenue, margins, and transaction data
+              Zenntraa lets finance teams query revenue, margins, and transaction data
               in plain English — returning exact numbers in milliseconds, not dashboards to dig through.
             </p>
 
@@ -323,11 +323,11 @@ export default function HeroSection() {
                   <div className="chrome-dot chrome-dot-y" />
                   <div className="chrome-dot chrome-dot-g" />
                 </div>
-                <div className="chrome-url">app.zentra.dev/dashboard/query</div>
+                <div className="chrome-url">app.zenntraa.dev/dashboard/query</div>
               </div>
               <Image
                 src="/dashboard-preview.png"
-                alt="Zentra dashboard"
+                alt="Zenntraa dashboard"
                 width={1200}
                 height={780}
                 className="dashboard-img"

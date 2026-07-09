@@ -302,13 +302,13 @@ export default function Navbar() {
             <Link href="/" className="zn-logo">
               <Image
                 src="/logo.png"
-                alt="Zentra"
+                alt="Zenntraa"
                 width={32}
                 height={32}
                 className="zn-logo-img"
                 priority
               />
-              <span className="zn-wordmark">Zentra</span>
+              <span className="zn-wordmark">Zenntraa</span>
             </Link>
 
             <div className="zn-links">

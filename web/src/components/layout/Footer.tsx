@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Linkedin } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -77,14 +76,6 @@ export default function Footer() {
           background: rgba(255,255,255,0.08);
         }
 
-        .zfooter-linkedin {
-          color: rgba(232,233,243,0.35);
-          display: flex; align-items: center;
-          transition: color 0.15s;
-        }
-
-        .zfooter-linkedin:hover { color: #7c83f5; }
-
         @media (max-width: 640px) {
           .zfooter {
             flex-direction: column;
@@ -105,16 +96,16 @@ export default function Footer() {
         <Link href="/" className="zfooter-logo">
           <Image
             src="/logo.png"
-            alt="Zentra"
+            alt="Zenntraa"
             width={26}
             height={26}
             className="zfooter-logo-img"
           />
-          <span className="zfooter-logo-name">Zentra</span>
+          <span className="zfooter-logo-name">Zenntraa</span>
         </Link>
 
         {/* Centre — copyright */}
-        <span className="zfooter-copy">© {new Date().getFullYear()} Zentra Systems, Inc.</span>
+        <span className="zfooter-copy">© {new Date().getFullYear()} Zenntraa Systems, Inc.</span>
 
         {/* Right — links */}
         <div className="zfooter-links">
@@ -123,16 +114,6 @@ export default function Footer() {
           <Link href="/privacy" className="zfooter-link">Privacy</Link>
           <div className="zfooter-divider" />
           <Link href="/contact" className="zfooter-link">Contact</Link>
-          <div className="zfooter-divider" />
-          {/* <a
-            href="https://linkedin.com/company/zentra"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="zfooter-linkedin"
-            aria-label="LinkedIn"
-          >
-            <Linkedin size={15} />
-          </a> */}
         </div>
 
       </footer>

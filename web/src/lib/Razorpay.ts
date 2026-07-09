@@ -131,7 +131,7 @@
 //       amount: orderData.amount,
 //       currency: orderData.currency,
 
-//       name: 'Zentra',
+//       name: 'Zenntraa',
 //       description: 'Pro Plan — 1,000 queries/month',
 //       image: '/logo.png',
 
@@ -309,7 +309,7 @@ async function notifyPaymentSuccess(
 }
 
 /**
- * Opens Razorpay checkout for Zentra Pro subscription.
+ * Opens Razorpay checkout for Zenntraa Pro subscription.
  *
  * Flow:
  * 1. Frontend calls backend to create order
@@ -356,7 +356,7 @@ export async function openRazorpayCheckout({
       currency: orderData.currency,
 
       // Branding
-      name: 'Zentra',
+      name: 'Zenntraa',
       description: 'Pro Plan — 1,000 queries/month',
       image: '/logo.png',
 

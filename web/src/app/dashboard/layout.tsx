@@ -73,12 +73,12 @@
 //     const id = setInterval(fetchEntitlements, 5 * 60 * 1000);
 
 //     // ── Real-time: re-fetch immediately after each query ──────────────────
-//     window.addEventListener('zentra:query', fetchEntitlements);
+//     window.addEventListener('zenntraa:query', fetchEntitlements);
 //     // ─────────────────────────────────────────────────────────────────────
 
 //     return () => {
 //       clearInterval(id);
-//       window.removeEventListener('zentra:query', fetchEntitlements);
+//       window.removeEventListener('zenntraa:query', fetchEntitlements);
 //     };
 //   }, [user]);
 //   // ───────────────────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@
 //           color: 'rgba(232,233,243,0.35)',
 //           animation: 'fadeIn 0.5s ease',
 //         }}>
-//           Loading Zentra…
+//           Loading Zenntraa…
 //         </div>
 //       </div>
 //     );
@@ -354,8 +354,8 @@
 //         <aside className={`zdl-sidebar ${sidebarOpen ? 'open' : ''}`}>
 
 //           <Link href="/" className="zdl-logo">
-//             <Image src="/logo.png" alt="Zentra" width={28} height={28} className="zdl-logo-img" priority />
-//             <span className="zdl-logo-word">Zentra</span>
+//             <Image src="/logo.png" alt="Zenntraa" width={28} height={28} className="zdl-logo-img" priority />
+//             <span className="zdl-logo-word">Zenntraa</span>
 //           </Link>
 
 //           <nav className="zdl-nav">
@@ -501,8 +501,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setDbConnected(!isAPIError(res) && res.connected === true);
     };
     syncDbStatus();
-    window.addEventListener('zentra:query', syncDbStatus);
-    return () => window.removeEventListener('zentra:query', syncDbStatus);
+    window.addEventListener('zenntraa:query', syncDbStatus);
+    return () => window.removeEventListener('zenntraa:query', syncDbStatus);
   }, [user]);
 
   // ── Fetch entitlements (plan + usage) ─────────────────────────────────────
@@ -520,12 +520,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const id = setInterval(fetchEntitlements, 5 * 60 * 1000);
 
     // ── Real-time: re-fetch immediately after each query ──────────────────
-    window.addEventListener('zentra:query', fetchEntitlements);
+    window.addEventListener('zenntraa:query', fetchEntitlements);
     // ─────────────────────────────────────────────────────────────────────
 
     return () => {
       clearInterval(id);
-      window.removeEventListener('zentra:query', fetchEntitlements);
+      window.removeEventListener('zenntraa:query', fetchEntitlements);
     };
   }, [user]);
   // ───────────────────────────────────────────────────────────────────────────
@@ -559,7 +559,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           color: 'rgba(232,233,243,0.35)',
           animation: 'fadeIn 0.5s ease',
         }}>
-          Loading Zentra…
+          Loading Zenntraa…
         </div>
       </div>
     );
@@ -801,8 +801,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <aside className={`zdl-sidebar ${sidebarOpen ? 'open' : ''}`}>
 
           <Link href="/" className="zdl-logo">
-            <Image src="/logo.png" alt="Zentra" width={28} height={28} className="zdl-logo-img" priority />
-            <span className="zdl-logo-word">Zentra</span>
+            <Image src="/logo.png" alt="Zenntraa" width={28} height={28} className="zdl-logo-img" priority />
+            <span className="zdl-logo-word">Zenntraa</span>
           </Link>
 
           <nav className="zdl-nav">

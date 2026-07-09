@@ -103,7 +103,8 @@ class FACTDriver:
             logger.error("FACT system initialization failed", error=str(e))
             raise ConfigurationError(f"System initialization failed: {e}")
 
-    async def process_query(self, user_input: str, user_id: str = "shared") -> str:
+    async def process_query(self, user_input: str, user_id: str = "shared",
+                             return_cache_info: bool = False) -> Any:
         """
         Process a user query through the FACT pipeline.
 
@@ -112,9 +113,15 @@ class FACTDriver:
             user_id: Identifier for the user, used to select the correct
                      schema-embedded system prompt and Anthropic cache prefix.
                      Defaults to "shared" (the built-in SQLite demo database).
+            return_cache_info: If True, return a (response_text, is_cache_hit)
+                     tuple where is_cache_hit reflects the real cache system
+                     result — not a latency guess. Defaults to False so every
+                     existing caller (CLI, tests, benchmarking, main.py) keeps
+                     getting a plain string with zero behavior change.
 
         Returns:
-            Generated response string
+            Generated response string, or (response string, is_cache_hit)
+            tuple when return_cache_info=True.
 
         Raises:
             FACTError: If query processing fails
@@ -157,7 +164,7 @@ class FACTDriver:
                 logger.info("Cache hit - returning cached response",
                             query_id=query_id,
                             latency_ms=latency)
-                return cached_response
+                return (cached_response, True) if return_cache_info else cached_response
 
             # Step 2: Cache miss - process query normally
             logger.info("Cache miss - processing query with LLM", query_id=query_id)
@@ -307,7 +314,7 @@ class FACTDriver:
                         latency_ms=latency,
                         response_length=len(response_text))
 
-            return response_text
+            return (response_text, False) if return_cache_info else response_text
 
         except Exception as e:
             end_time = time.time()
@@ -332,10 +339,14 @@ class FACTDriver:
             # Handle error with graceful degradation
             error_category = classify_error(e)
 
+            # Error responses are never real cache hits — always report False
+            # so a failed/degraded query never gets billed as a free hit.
             if error_category in ["connectivity", "tool_execution"]:
-                return provide_graceful_degradation(error_category)
+                degraded = provide_graceful_degradation(error_category)
+                return (degraded, False) if return_cache_info else degraded
             else:
-                return create_user_friendly_message(e)
+                msg = create_user_friendly_message(e)
+                return (msg, False) if return_cache_info else msg
 
     async def _fetch_and_cache_schema(self, user_id: str) -> None:
         """

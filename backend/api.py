@@ -953,6 +953,7 @@ from billing import (
     handle_razorpay_webhook,
     save_user_db_connection,
     get_user_db_connection,
+    deactivate_user_db_connection,
     save_user_query_history,
     get_user_query_history,
 )
@@ -994,6 +995,7 @@ async def lifespan(app: FastAPI):
     print("✅ Excel tool initialized — upload API ready")
     print("✅ Billing DB initialized")
     yield
+    await db_manager.close_all()
     print("👋 FACT API shutting down")
 
 
@@ -1020,7 +1022,7 @@ _explicit_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_explicit_origins,
-    allow_origin_regex=r"https://zentra(-[a-z0-9-]+)?\.vercel\.app",
+    allow_origin_regex=r"https://zenntraa(-[a-z0-9-]+)?\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1207,6 +1209,33 @@ def _clear_user_schema_cache(uid: str) -> None:
         driver._schema_prompt_cache.pop(uid, None)
 
 
+# ---------------------------------------------------------------------------
+# Per-user rate limiting for /api/v1/query
+# ---------------------------------------------------------------------------
+# In-memory sliding-window token bucket, keyed by uid. Single-process only —
+# fine for the current single Render instance; would need a shared store
+# (e.g. Redis) if this backend ever runs multiple worker processes/instances.
+_query_call_times: Dict[str, List[float]] = {}
+
+
+def _check_user_rate_limit(uid: str, limit_per_min: int) -> None:
+    now = time.time()
+    calls = _query_call_times.setdefault(uid, [])
+    cutoff = now - 60
+    calls[:] = [t for t in calls if t > cutoff]
+
+    if len(calls) >= limit_per_min:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "RATE_LIMITED",
+                "message": f"Too many queries — limit is {limit_per_min} per minute. Please slow down and try again shortly.",
+            },
+        )
+
+    calls.append(now)
+
+
 async def _restore_saved_user_pool(uid: str) -> Optional[dict]:
     """
     Restore a saved PostgreSQL connection from Firestore into the in-memory pool map.
@@ -1239,19 +1268,34 @@ async def query(request: Request, body: QueryRequest):
     if not driver:
         raise HTTPException(status_code=503, detail="FACT driver not ready")
 
-    uid = _resolve_uid_from_request(request, require_auth_in_production=False)
+    # Layer 1: require a real Firebase account in production. The frontend
+    # already requires login before /dashboard is reachable, so this closes
+    # off unauthenticated/anonymous access to the LLM without affecting any
+    # legitimate flow.
+    uid = _resolve_uid_from_request(request, require_auth_in_production=True)
 
     # ── BILLING: Check monthly quota ───────────────────────────────────────
     plan   = get_user_plan(uid)
     limits = get_plan_limits(plan)
     usage  = get_monthly_usage(uid)
 
+    # Layer 2: per-user per-minute rate limit, using each plan's
+    # rate_limit_per_min (already defined in PLANS but previously unused).
+    # Caps abuse from a single account — a compromised token, a buggy retry
+    # loop, or deliberate spamming — independent of the monthly quota.
+    _check_user_rate_limit(uid, limits["rate_limit_per_min"])
+
     if usage >= limits["queries_per_month"]:
         raise HTTPException(
             status_code=402,
             detail={
                 "error": "QUOTA_EXCEEDED",
-                "message": f"Monthly query limit ({limits['queries_per_month']}) exceeded. Upgrade to Pro.",
+                "message": (
+                    f"Monthly query limit ({limits['queries_per_month']}) exceeded. "
+                    + ("Your quota resets on the 1st."
+                       if plan == "pro"
+                       else "Upgrade to Pro for 1,000 queries/month.")
+                ),
                 "plan": plan,
                 "queries_used": usage,
                 "queries_limit": limits["queries_per_month"],
@@ -1264,9 +1308,10 @@ async def query(request: Request, body: QueryRequest):
     t_start = time.time()
 
     try:
-        response = await driver.process_query(body.query, user_id=uid)
+        response, is_cache_hit = await driver.process_query(
+            body.query, user_id=uid, return_cache_info=True
+        )
         latency_ms = round((time.time() - t_start) * 1000, 2)
-        is_cache_hit = latency_ms < 50
 
         # Only count cache misses against quota
         if not is_cache_hit and uid != "shared":
@@ -1497,7 +1542,17 @@ async def razorpay_webhook(request: Request):
             print(f"❌ Signature verification error: {e}")
             raise HTTPException(status_code=401, detail="Signature verification failed")
     else:
-        print("⚠️  RAZORPAY_WEBHOOK_SECRET not configured — skipping signature check")
+        # No secret configured. In production this is a security misconfiguration —
+        # refuse to process unverifiable webhooks (an attacker could otherwise POST
+        # a forged subscription.charged and grant themselves Pro). Only allow the
+        # skip in non-production for local development.
+        if os.getenv("ENVIRONMENT", "development") == "production":
+            print("❌ RAZORPAY_WEBHOOK_SECRET not configured in production — rejecting webhook")
+            raise HTTPException(
+                status_code=500,
+                detail="Webhook signature verification is not configured on the server.",
+            )
+        print("⚠️  RAZORPAY_WEBHOOK_SECRET not configured — skipping signature check (non-production only)")
 
     try:
         payload = json.loads(payload_bytes)
@@ -1579,16 +1634,6 @@ async def database_status(request: Request):
             message="Using shared SQLite demo database.",
         )
 
-    plan = get_user_plan(uid)
-    limits = get_plan_limits(plan)
-
-    if not limits["postgres"]:
-        return DatabaseStatusResponse(
-            connected=False,
-            uses_demo=True,
-            message="Free plan uses shared SQLite demo database.",
-        )
-
     saved = await _restore_saved_user_pool(uid)
     if not saved:
         return DatabaseStatusResponse(
@@ -1617,22 +1662,6 @@ async def connect_database(request: Request, req: DatabaseConnectRequest):
         raise HTTPException(status_code=400, detail="All connection fields are required.")
 
     uid = _resolve_uid_from_request(request, require_auth_in_production=True)
-
-    # ── BILLING: PostgreSQL is Pro only ───────────────────────────────────
-    if uid != "shared":
-        plan   = get_user_plan(uid)
-        limits = get_plan_limits(plan)
-        if not limits["postgres"]:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "error": "FEATURE_LOCKED",
-                    "message": "Custom PostgreSQL connections require a Pro plan.",
-                    "plan": plan,
-                    "upgrade_url": _RZ_CHECKOUT_URL,
-                },
-            )
-    # ─────────────────────────────────────────────────────────────────────
 
     try:
         await _attempt_connection(req)
@@ -1667,6 +1696,23 @@ async def connect_database(request: Request, req: DatabaseConnectRequest):
         )
     except Exception as e:
         return DatabaseConnectResponse(success=False, message=f"Credentials valid but pool registration failed: {e}")
+
+
+@app.post("/api/v1/database/disconnect", response_model=DatabaseConnectResponse)
+async def disconnect_database(request: Request):
+    uid = _resolve_uid_from_request(request, require_auth_in_production=True)
+
+    try:
+        await db_manager.remove_user_pool(uid)
+        deactivate_user_db_connection(uid)
+        _clear_user_schema_cache(uid)
+
+        return DatabaseConnectResponse(
+            success=True,
+            message="Database disconnected. Queries will use the shared SQLite demo database until you reconnect.",
+        )
+    except Exception as e:
+        return DatabaseConnectResponse(success=False, message=f"Failed to disconnect: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -1763,7 +1809,7 @@ async def contact_form(body: ContactRequest):
                 "from":     from_email,
                 "to":       [contact_email],
                 "reply_to": body.email,
-                "subject":  f"Zentra Contact: {body.name}",
+                "subject":  f"Zenntraa Contact: {body.name}",
                 "text":     f"Name:    {body.name}\nEmail:   {body.email}\n\nMessage:\n{body.message}",
             },
             timeout=10,

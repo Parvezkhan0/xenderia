@@ -20,14 +20,14 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Getting Started",
     items: [
-      { href: "what-is-zentra", label: "What is Zentra?" },
+      { href: "what-is-zenntraa", label: "What is Zenntraa?" },
       { href: "how-it-works", label: "How It Works" },
       { href: "connect-database", label: "Connect Your Database" },
       { href: "first-query", label: "Your First Query" },
     ],
   },
   {
-    label: "Using Zentra",
+    label: "Using Zenntraa",
     items: [
       { href: "writing-queries", label: "Writing Good Queries" },
       { href: "query-examples", label: "Query Examples" },
@@ -309,7 +309,7 @@ function FaqItem({ q, a }: { q: string; a: React.ReactNode }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState("what-is-zentra");
+  const [activeSection, setActiveSection] = useState("what-is-zenntraa");
   const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -422,7 +422,7 @@ export default function DocsPage() {
               fontFamily: "'Syne', sans-serif", fontWeight: 800,
               fontSize: 20, letterSpacing: "-0.5px", color: "var(--z-accent)",
             }}>
-              Zentra
+              Zenntraa
             </div>
             <div style={{
               fontSize: 11, color: "var(--z-muted)",
@@ -460,14 +460,14 @@ export default function DocsPage() {
           style={{ flex: 1, maxWidth: 860, padding: "64px 72px", overflowY: "auto" }}
         >
 
-          {/* ── WHAT IS ZENTRA ── */}
-          <section id="what-is-zentra" style={sectionStyle}>
+          {/* ── WHAT IS ZENNTRAA ── */}
+          <section id="what-is-zenntraa" style={sectionStyle}>
             <SectionTag>Introduction</SectionTag>
             <h1 style={{
               fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 40,
               lineHeight: 1.15, letterSpacing: "-1px", marginBottom: 16, color: "var(--z-text)",
             }}>
-              Zentra{" "}
+              Zenntraa{" "}
               <span style={{
                 background: "linear-gradient(90deg, var(--z-accent), var(--z-accent2))",
                 WebkitBackgroundClip: "text",
@@ -478,19 +478,19 @@ export default function DocsPage() {
               </span>
             </h1>
             <p style={{ fontSize: 17, color: "#b0b8c8", marginBottom: 32, lineHeight: 1.65 }}>
-              Zentra lets you query your financial database using plain English — no SQL, no code, no waiting.
+              Zenntraa lets you query your financial database using plain English — no SQL, no code, no waiting.
               Just ask a question and get an exact answer in milliseconds.
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, margin: "24px 0" }}>
               <Card icon="⚡" title="Sub-50ms on repeat queries"
-                desc="Zentra remembers answers it has given before and returns them instantly from cache — zero AI cost, zero database load." />
+                desc="Zenntraa remembers answers it has given before and returns them instantly from cache — zero AI cost, zero database load." />
               <Card icon="🎯" title="Exact answers, not guesses"
-                desc="Unlike fuzzy AI search, Zentra runs real SQL queries against your database. The number you get is the number in your data." />
+                desc="Unlike fuzzy AI search, Zenntraa runs real SQL queries against your database. The number you get is the number in your data." />
               <Card icon="🔒" title="Read-only & secure"
-                desc="Zentra can only read your data — never modify or delete it. All queries are validated before execution." />
+                desc="Zenntraa can only read your data — never modify or delete it. All queries are validated before execution." />
               <Card icon="💬" title="Plain English interface"
-                desc="No SQL knowledge required. Ask questions the way you'd ask a colleague — Zentra handles the technical translation." />
+                desc="No SQL knowledge required. Ask questions the way you'd ask a colleague — Zenntraa handles the technical translation." />
             </div>
           </section>
 
@@ -501,21 +501,21 @@ export default function DocsPage() {
             <SectionTag>Architecture</SectionTag>
             <h2 style={h2Style}>How It Works</h2>
             <p style={pStyle}>
-              Every time you submit a query, Zentra follows one of two paths depending on whether it has seen your question before.
+              Every time you submit a query, Zenntraa follows one of two paths depending on whether it has seen your question before.
             </p>
 
             <div style={{ margin: "24px 0" }}>
               <Step num={1} title="You type a question in plain English">
                 Example: <em>&quot;What was TechCorp&apos;s revenue in Q1 2025?&quot;</em>
               </Step>
-              <Step num={2} title="Zentra checks its memory (cache)">
+              <Step num={2} title="Zenntraa checks its memory (cache)">
                 <div style={{ marginBottom: 6 }}>
                   <Badge variant="green">Cache Hit</Badge>
-                  If Zentra has answered this exact question before, it returns the stored answer instantly — usually under 50ms. No AI call made, no cost incurred.
+                  If Zenntraa has answered this exact question before, it returns the stored answer instantly — usually under 50ms. No AI call made, no cost incurred.
                 </div>
                 <div>
                   <Badge variant="blue">Cache Miss</Badge>
-                  If it&apos;s a new question, Zentra moves to step 3.
+                  If it&apos;s a new question, Zenntraa moves to step 3.
                 </div>
               </Step>
               <Step num={3} title="AI converts your question to SQL">
@@ -527,13 +527,13 @@ export default function DocsPage() {
                 your data is never at risk of modification.
               </Step>
               <Step num={5} title="Answer is returned and stored">
-                You receive a clean, formatted answer. Zentra saves it to cache so the next time anyone asks the same question, it returns in milliseconds.
+                You receive a clean, formatted answer. Zenntraa saves it to cache so the next time anyone asks the same question, it returns in milliseconds.
               </Step>
             </div>
 
             <Tip>
               <strong style={accentStrong}>Why this matters for finance:</strong> In financial analysis, you often ask the same
-              questions repeatedly — quarter comparisons, KPI checks, sector summaries. Zentra&apos;s cache turns those repeated
+              questions repeatedly — quarter comparisons, KPI checks, sector summaries. Zenntraa&apos;s cache turns those repeated
               lookups into near-instant responses at zero additional cost.
             </Tip>
           </section>
@@ -545,7 +545,7 @@ export default function DocsPage() {
             <SectionTag>Setup</SectionTag>
             <h2 style={h2Style}>Connect Your Database</h2>
             <p style={pStyle}>
-              Before running queries, connect Zentra to your database. Navigate to{" "}
+              Before running queries, connect Zenntraa to your database. Navigate to{" "}
               <strong>Settings → Connect Database</strong> in your dashboard.
             </p>
 
@@ -555,10 +555,10 @@ export default function DocsPage() {
               </Step>
               <Step num={2} title="Enter your database credentials">
                 Fill in your <strong>Host</strong>, <strong>Port</strong>, <strong>Database Name</strong>,{" "}
-                <strong>Username</strong>, and <strong>Password</strong>. Zentra supports PostgreSQL databases.
+                <strong>Username</strong>, and <strong>Password</strong>. Zenntraa supports PostgreSQL databases.
               </Step>
               <Step num={3} title="Test the connection">
-                Click <strong>Test Connection</strong> to verify credentials before saving. Zentra will confirm
+                Click <strong>Test Connection</strong> to verify credentials before saving. Zenntraa will confirm
                 whether it can reach your database.
               </Step>
               <Step num={4} title="Activate">
@@ -568,7 +568,7 @@ export default function DocsPage() {
             </div>
 
             <WarnTip>
-              <strong style={{ color: "var(--z-warn)" }}>Note:</strong> Zentra only ever reads from your database —
+              <strong style={{ color: "var(--z-warn)" }}>Note:</strong> Zenntraa only ever reads from your database —
               it cannot write, update, or delete any records. Your data is safe.
             </WarnTip>
           </section>
@@ -604,7 +604,7 @@ export default function DocsPage() {
             <SectionTag>Best Practices</SectionTag>
             <h2 style={h2Style}>Writing Good Queries</h2>
             <p style={pStyle}>
-              Zentra understands natural language, but the more specific your question, the more accurate
+              Zenntraa understands natural language, but the more specific your question, the more accurate
               and cache-friendly the answer.
             </p>
 
@@ -618,7 +618,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 8 }}>Use exact company names</h3>
             <p style={pStyle}>
-              Zentra queries your database directly, so company names must match what&apos;s stored.
+              Zenntraa queries your database directly, so company names must match what&apos;s stored.
               If a query returns no results, try the exact spelling as it appears in your data.
             </p>
 
@@ -638,7 +638,7 @@ export default function DocsPage() {
 
             <Tip>
               <strong style={accentStrong}>Cache tip:</strong> Repeated queries are free and instant. If you run
-              reports regularly, ask questions the same way each time — Zentra will serve them from cache in under 50ms.
+              reports regularly, ask questions the same way each time — Zenntraa will serve them from cache in under 50ms.
             </Tip>
           </section>
 
@@ -718,12 +718,12 @@ export default function DocsPage() {
             <SectionTag>Performance</SectionTag>
             <h2 style={h2Style}>Cache &amp; Speed</h2>
             <p style={pStyle}>
-              Zentra&apos;s cache is what makes it dramatically faster and cheaper than running AI queries every time.
+              Zenntraa&apos;s cache is what makes it dramatically faster and cheaper than running AI queries every time.
             </p>
 
             <h3 style={{ ...h3Style, marginTop: 20, marginBottom: 8 }}>Why your first query is slower</h3>
             <p style={pStyle}>
-              The first time you ask a question, Zentra calls the AI and queries your database. This typically takes
+              The first time you ask a question, Zenntraa calls the AI and queries your database. This typically takes
               1–7 seconds. Every subsequent time you ask the same question, it returns in under 50ms from cache.
             </p>
 
@@ -735,7 +735,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 20, marginBottom: 8 }}>Why cached answers don&apos;t last forever</h3>
             <p style={pStyle}>
-              Your database data changes — new companies get added, financial records get updated. Zentra&apos;s cache
+              Your database data changes — new companies get added, financial records get updated. Zenntraa&apos;s cache
               has a limited lifetime to ensure you always see fresh data rather than stale results.
             </p>
 
@@ -752,7 +752,7 @@ export default function DocsPage() {
             <SectionTag>Developers</SectionTag>
             <h2 style={h2Style}>API Reference</h2>
             <p style={pStyle}>
-              If you&apos;re integrating Zentra into your own tools or scripts, use the REST API directly.
+              If you&apos;re integrating Zenntraa into your own tools or scripts, use the REST API directly.
             </p>
 
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 10 }}>Base URL</h3>
@@ -786,7 +786,7 @@ export default function DocsPage() {
             />
 
             <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>GET /health</h3>
-            <p style={pStyle}>Check if the Zentra system is online.</p>
+            <p style={pStyle}>Check if the Zenntraa system is online.</p>
             <Endpoint method="GET" path="/api/v1/health" />
 
             <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>GET /metrics</h3>
@@ -817,7 +817,7 @@ export default function DocsPage() {
             <h3 style={{ ...h3Style, marginTop: 8, marginBottom: 12 }}>Query returns no results</h3>
             <p style={pStyle}>
               This usually means the data doesn&apos;t exist in your database for the specified parameters.
-              Try asking Zentra what data is available:
+              Try asking Zenntraa what data is available:
             </p>
             <div style={{ margin: "16px 0" }}>
               <QueryItem icon="→" text="What time periods do we have financial data for?" />
@@ -826,7 +826,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>Query returns an error about a column not existing</h3>
             <p style={pStyle}>
-              Zentra occasionally generates SQL using a column name that doesn&apos;t exactly match your schema.
+              Zenntraa occasionally generates SQL using a column name that doesn&apos;t exactly match your schema.
               It will automatically retry with the correct schema. If errors persist, try rephrasing your question more specifically.
             </p>
 
@@ -845,7 +845,7 @@ export default function DocsPage() {
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>Database won&apos;t connect</h3>
             <p style={pStyle}>
               Double-check that your host, port, database name, username, and password are all correct.
-              Ensure your database server allows inbound connections from Zentra&apos;s IP.
+              Ensure your database server allows inbound connections from Zenntraa&apos;s IP.
               Use the <strong>Test Connection</strong> button in Settings to diagnose.
             </p>
 
@@ -864,42 +864,42 @@ export default function DocsPage() {
             <h2 style={h2Style}>Frequently Asked Questions</h2>
 
             <FaqItem
-              q="Do I need to know SQL to use Zentra?"
-              a="No. Zentra converts your plain English questions into SQL automatically. You never write or see any SQL unless you specifically ask for it."
+              q="Do I need to know SQL to use Zenntraa?"
+              a="No. Zenntraa converts your plain English questions into SQL automatically. You never write or see any SQL unless you specifically ask for it."
             />
             <FaqItem
-              q="Can Zentra modify or delete my data?"
-              a="No. Zentra is strictly read-only. Only SELECT queries are permitted — it cannot insert, update, or delete any records in your database."
+              q="Can Zenntraa modify or delete my data?"
+              a="No. Zenntraa is strictly read-only. Only SELECT queries are permitted — it cannot insert, update, or delete any records in your database."
             />
             <FaqItem
               q="Why does the same question sometimes get a Cache Miss?"
-              a='Zentra caches by exact question text. Minor wording differences — "List all companies" vs "Show me all companies" — are treated as separate questions. Use consistent phrasing for queries you run regularly to always hit the cache.'
+              a='Zenntraa caches by exact question text. Minor wording differences — "List all companies" vs "Show me all companies" — are treated as separate questions. Use consistent phrasing for queries you run regularly to always hit the cache.'
             />
             <FaqItem
-              q="How long does Zentra keep cached answers?"
-              a="Cache entries expire automatically to prevent stale data. Since financial databases update regularly, Zentra refreshes its cache on a short cycle to ensure you always see accurate results."
+              q="How long does Zenntraa keep cached answers?"
+              a="Cache entries expire automatically to prevent stale data. Since financial databases update regularly, Zenntraa refreshes its cache on a short cycle to ensure you always see accurate results."
             />
             <FaqItem
-              q="What databases does Zentra support?"
-              a="Zentra currently supports PostgreSQL. If you're on the demo, it uses a built-in database with sample financial data. Connect your own PostgreSQL database under Settings."
+              q="What databases does Zenntraa support?"
+              a="Zenntraa currently supports PostgreSQL. If you're on the demo, it uses a built-in database with sample financial data. Connect your own PostgreSQL database under Settings."
             />
             <FaqItem
               q="What's a good cache hit rate?"
               a="Target 80% or higher. You can check your current cache hit rate on the Metrics page. A low hit rate typically means queries are being phrased differently each time — try standardizing your question wording."
             />
             <FaqItem
-              q="Can I use Zentra programmatically via API?"
+              q="Can I use Zenntraa programmatically via API?"
               a={
                 <>
-                  Yes. Zentra exposes a REST API at <InlineCode>POST /api/v1/query</InlineCode>. See the API
+                  Yes. Zenntraa exposes a REST API at <InlineCode>POST /api/v1/query</InlineCode>. See the API
                   Reference section above for full details. Useful for building custom dashboards or automating
                   report generation.
                 </>
               }
             />
             <FaqItem
-              q="What if Zentra gives a wrong answer?"
-              a="Zentra retrieves exact values from your database — it doesn't guess or estimate. If an answer looks wrong, verify the underlying data in your database first. If the data is correct but the answer is still wrong, contact support with the Query ID shown in the response."
+              q="What if Zenntraa gives a wrong answer?"
+              a="Zenntraa retrieves exact values from your database — it doesn't guess or estimate. If an answer looks wrong, verify the underlying data in your database first. If the data is correct but the answer is still wrong, contact support with the Query ID shown in the response."
             />
             <FaqItem
               q="How do I get support on the Free plan?"

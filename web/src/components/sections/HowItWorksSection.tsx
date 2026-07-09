@@ -38,7 +38,7 @@ function PreviewAsk() {
         <div className="preview-dots">
           <span className="pd pd-r"/><span className="pd pd-y"/><span className="pd pd-g"/>
         </div>
-        <span className="preview-bar-label">Zentra · Ask anything</span>
+        <span className="preview-bar-label">Zenntraa · Ask anything</span>
       </div>
       <div className="preview-body">
         <div className="ask-input-row">
@@ -192,7 +192,7 @@ const STEPS = [
     tag: 'Input',
     color: '#7c83f5',
     title: 'Ask in plain English',
-    description: 'No SQL. No dashboards. No waiting on a data team. Just type your question the way you\'d ask a colleague, and Zentra figures out the rest.',
+    description: 'No SQL. No dashboards. No waiting on a data team. Just type your question the way you\'d ask a colleague, and Zenntraa figures out the rest.',
     Preview: PreviewAsk,
   },
   {
@@ -200,7 +200,7 @@ const STEPS = [
     tag: 'Cache Check',
     color: '#34d399',
     title: 'Memory checked first',
-    description: 'Before touching the AI or your database, Zentra checks if this question has already been answered. If yes — you get the result in under 50ms. Zero AI cost.',
+    description: 'Before touching the AI or your database, Zenntraa checks if this question has already been answered. If yes — you get the result in under 50ms. Zero AI cost.',
     Preview: PreviewCache,
   },
   {
