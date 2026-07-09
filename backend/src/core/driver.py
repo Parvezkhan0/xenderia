@@ -621,8 +621,10 @@ class FACTDriver:
                 raise ConnectionError(f"Error code: {test_resp.status_code} - {test_resp.text}")
 
         except Exception as e:
-            logger.error("Connection test failed", error=str(e))
-            raise ConnectionError(f"Service connection test failed: {e}")
+            # Connection test is not fatal - log warning but continue startup
+            # Actual queries will fail if API key or network is truly unavailable
+            logger.warning("Connection test failed (non-fatal)", error=str(e))
+            logger.warning("Application will start, but first query may fail if API is unreachable")
 
     async def _call_llm_with_cache(self,
                                    messages: List[Dict[str, Any]],
