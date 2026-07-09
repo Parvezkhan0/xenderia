@@ -1131,12 +1131,6 @@ class EntitlementsResponse(BaseModel):
 
 
 # ── Billing Models ─────────────────────────────────────────────────────────
-class RazorpayOrderResponse(BaseModel):
-    order_id: str
-    amount: int
-    currency: str
-
-
 class PaymentSuccessResponse(BaseModel):
     status: str
     uid: str
@@ -1435,60 +1429,6 @@ async def cache_status():
 # ─────────────────────────────────────────────────────────────────────────────
 # RAZORPAY BILLING ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
-@app.post("/api/v1/razorpay/create-order", response_model=RazorpayOrderResponse)
-async def create_razorpay_order(request: Request):
-    """
-    Create a Razorpay order for the Pro plan ($29).
-    Called by frontend during checkout.
-
-    Returns: order_id, amount, currency
-    Frontend will use order_id to open Razorpay modal.
-    """
-
-    uid = _resolve_uid_from_request(request, require_auth_in_production=True)
-
-    # Amount in paise (1 USD = 100 paise, so $29 = 2900 paise)
-    amount_paise = 2900 * 100  # $29 in paise
-    currency = "INR"  # Or "USD" if you're using USD
-
-    # Razorpay API credentials
-    rz_key_id = os.getenv("RAZORPAY_KEY_ID", "")
-    rz_key_secret = os.getenv("RAZORPAY_KEY_SECRET", "")
-
-    if not rz_key_id or not rz_key_secret:
-        raise HTTPException(
-            status_code=500,
-            detail="Razorpay credentials not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env"
-        )
-
-    try:
-        response = requests.post(
-            "https://api.razorpay.com/v1/orders",
-            auth=(rz_key_id, rz_key_secret),
-            json={
-                "amount": amount_paise,
-                "currency": currency,
-                "receipt": f"order_{uid}_{int(time.time())}",
-                "notes": {
-                    "user_id": uid,
-                    "plan": "pro",
-                },
-            },
-            timeout=10,
-        )
-        response.raise_for_status()
-        order_data = response.json()
-
-        return RazorpayOrderResponse(
-            order_id=order_data["id"],
-            amount=order_data["amount"],
-            currency=order_data["currency"],
-        )
-    except requests.RequestException as e:
-        print(f"❌ Razorpay API error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
-
-
 @app.post("/api/v1/razorpay/payment-success", response_model=PaymentSuccessResponse)
 async def payment_success(request: Request):
     """
