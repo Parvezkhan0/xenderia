@@ -1015,14 +1015,14 @@ app.add_middleware(SlowAPIMiddleware)
 
 _explicit_origins = [
     o.strip()
-    for o in os.getenv("ALLOWED_ORIGINS", "").split(",")
+    for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
     if o.strip()
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_explicit_origins,
-    allow_origin_regex=r"https://zenntraa(-[a-z0-9-]+)?\.vercel\.app",
+    allow_origin_regex=r"https://(zenntraa(-[a-z0-9-]+)?\.vercel\.app|www\.zenntraa\.com|zenntraa\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
