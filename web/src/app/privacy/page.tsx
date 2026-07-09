@@ -36,7 +36,7 @@ export default function PrivacyPage() {
         }
         .legal-section {
           margin-bottom: 40px;
-        }
+        } 
         .legal-h2 {
           font-size: 15px;
           font-weight: 700;
