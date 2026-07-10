@@ -1429,32 +1429,6 @@ async def cache_status():
 # ─────────────────────────────────────────────────────────────────────────────
 # RAZORPAY BILLING ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
-@app.post("/api/v1/razorpay/payment-success", response_model=PaymentSuccessResponse)
-async def payment_success(request: Request):
-    """
-    Called by frontend after successful Razorpay payment.
-    Upgrades user to Pro plan in Firestore.
-
-    Backend webhook (payment.captured) will also call this for verification.
-    """
-    uid = _resolve_uid_from_request(request, require_auth_in_production=True)
-
-    from billing import upsert_subscription
-
-    try:
-        upsert_subscription(uid, "pro", "", "", "active")
-
-        print(f"✅ User {uid} upgraded to Pro (payment-success endpoint)")
-
-        return PaymentSuccessResponse(
-            status="upgraded",
-            uid=uid,
-        )
-    except Exception as e:
-        print(f"❌ Payment success handler error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to upgrade plan: {str(e)}")
-
-
 @app.post("/api/v1/razorpay/webhook")
 async def razorpay_webhook(request: Request):
     """
