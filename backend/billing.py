@@ -608,6 +608,17 @@ def index_subscription(subscription_id: str, user_id: str) -> None:
         logger.error(f"index_subscription error: {e}")
 
 
+def unindex_subscription(subscription_id: str) -> None:
+    """Remove subscription_id → uid reverse index when a subscription is revoked."""
+    if not subscription_id:
+        return
+    try:
+        _db().collection("rz_subscriptions").document(subscription_id).delete()
+        logger.info(f"Cleaned subscription index for {subscription_id}")
+    except Exception as e:
+        logger.warning(f"Failed to clean subscription index for {subscription_id}: {e}")
+
+
 def get_uid_by_subscription(subscription_id: str) -> str:
     """Look up the uid that owns a Razorpay subscription_id. Returns '' if unknown."""
     if not subscription_id:
@@ -625,19 +636,26 @@ def _resolve_subscription_uid(payload: dict) -> tuple[str, dict]:
     """
     Resolve (uid, subscription_entity) for a Razorpay subscription webhook.
     uid is '' when the subscription cannot be matched to any Zenntraa account.
+    Tries three fallback paths: notes.user_id → subscription_id reverse index → email lookup.
     """
     sub = payload.get("payload", {}).get("subscription", {}).get("entity", {}) or {}
     pay = payload.get("payload", {}).get("payment", {}).get("entity", {}) or {}
 
     uid = (sub.get("notes") or {}).get("user_id", "")
     if uid:
+        logger.info(f"UID resolved via notes.user_id: {uid}")
         return uid, sub
 
     uid = get_uid_by_subscription(sub.get("id", ""))
     if uid:
+        logger.info(f"UID resolved via subscription_id reverse index: {uid}")
         return uid, sub
 
     uid = get_uid_by_email(pay.get("email", ""))
+    if uid:
+        logger.info(f"UID resolved via email lookup: {uid}")
+    else:
+        logger.warning(f"UID resolution failed: no path succeeded (sub_id={sub.get('id')}, email={pay.get('email')})")
     return uid, sub
 
 
@@ -902,6 +920,9 @@ def handle_razorpay_webhook(payload: dict) -> None:
             logger.warning(f"{event}: could not resolve uid (sub={sub.get('id')}) — skipping")
             return
         sub_id = sub.get("id", "")
+        if not sub_id:
+            logger.error(f"{event}: missing subscription.id in payload — rejecting")
+            raise ValueError("Invalid subscription payload: missing subscription.id")
         upsert_subscription(uid, "pro", sub.get("customer_id", ""), sub_id, "active")
         index_subscription(sub_id, uid)
         logger.info(f"{event}: uid={uid} → pro (sub={sub_id})")
@@ -912,7 +933,10 @@ def handle_razorpay_webhook(payload: dict) -> None:
             logger.warning(f"{event}: could not resolve uid (sub={sub.get('id')}) — skipping")
             return
         cancel_subscription(uid)
-        logger.info(f"{event}: uid={uid} → free (sub={sub.get('id')})")
+        sub_id = sub.get("id", "")
+        if sub_id:
+            unindex_subscription(sub_id)
+        logger.info(f"{event}: uid={uid} → free (sub={sub_id})")
 
     # ── Legacy one-time payment (accounts upgraded before subscriptions) ──
     elif event == "payment.captured":
