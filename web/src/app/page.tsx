@@ -4,6 +4,7 @@ import HeroSection from '@/components/sections/HeroSection';
 import FeaturesSection from '@/components/sections/FeaturesSection';
 import HowItWorksSection from '@/components/sections/HowItWorksSection';
 import SocialProofSection from '@/components/sections/SocialProofSection';
+import FinalCtaSection from '@/components/sections/FinalCtaSection';
 
 export default function HomePage() {
   return (
@@ -14,6 +15,7 @@ export default function HomePage() {
         <FeaturesSection />
         <HowItWorksSection />
         <SocialProofSection />
+        <FinalCtaSection />
       </main>
       <Footer />
     </>

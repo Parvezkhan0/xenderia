@@ -59,82 +59,44 @@ function PreviewAsk() {
   );
 }
 
-// ── Step 2 Preview: Cache lookup ────────────────────
+// ── Step 2 Preview: Cache lookup (simplified) ────────────────────
 function PreviewCache() {
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    const t1 = setTimeout(() => setStep(1), 500);
-    const t2 = setTimeout(() => setStep(2), 1200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-
   return (
     <div className="preview-card">
       <div className="preview-topbar">
         <div className="preview-dots">
           <span className="pd pd-r"/><span className="pd pd-y"/><span className="pd pd-g"/>
         </div>
-        <span className="preview-bar-label">Cache Manager</span>
-        <span className="preview-bar-badge green">● Active</span>
+        <span className="preview-bar-label">Cache Check</span>
       </div>
       <div className="preview-body">
-        <div className="cache-lookup-row">
-          <span className="cache-lookup-label">Query hash</span>
-          <span className="cache-lookup-val mono">sha256:8f3a…c92d</span>
+        <div style={{ padding: '12px 14px', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.15)', borderRadius: '8px', fontSize: '13px', color: 'rgba(232,233,243,0.7)', lineHeight: 1.6 }}>
+          ⚡ <strong>Cache HIT</strong> — This question was answered 2 days ago. Returning result from memory in 18ms. Zero AI tokens used.
         </div>
-        <div className="cache-lookup-row">
-          <span className="cache-lookup-label">Status</span>
-          <span className={`cache-status-chip ${step >= 1 ? (step >= 2 ? 'hit' : 'checking') : 'idle'}`}>
-            {step === 0 ? '— idle' : step === 1 ? '⟳ Checking…' : '✓ Cache HIT'}
-          </span>
-        </div>
-        <div className="cache-lookup-row">
-          <span className="cache-lookup-label">Latency</span>
-          <span className="cache-lookup-val mono" style={{ color: step >= 2 ? '#34d399' : 'rgba(232,233,243,0.25)' }}>
-            {step >= 2 ? '21ms' : '—'}
-          </span>
-        </div>
-        <div className="cache-lookup-row">
-          <span className="cache-lookup-label">AI tokens used</span>
-          <span className="cache-lookup-val mono" style={{ color: step >= 2 ? '#34d399' : 'rgba(232,233,243,0.25)' }}>
-            {step >= 2 ? '0' : '—'}
-          </span>
-        </div>
-        {step >= 2 && (
-          <div className="cache-hit-banner">
-            ⚡ Answered from memory — no AI call needed
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// ── Step 3 Preview: SQL execution ───────────────────
+// ── Step 3 Preview: SQL execution (simplified) ───────────────────
 function PreviewSQL() {
-  const sql = `SELECT company,
-  AVG(net_margin) AS margin
-FROM financials
-WHERE sector = 'healthcare'
-  AND quarter = 'Q2 2024'
-GROUP BY company
-ORDER BY margin DESC;`;
-
   return (
     <div className="preview-card">
       <div className="preview-topbar">
         <div className="preview-dots">
           <span className="pd pd-r"/><span className="pd pd-y"/><span className="pd pd-g"/>
         </div>
-        <span className="preview-bar-label mono-label">SQL</span>
-        <span className="preview-bar-badge amber">READ-ONLY · SANDBOXED</span>
+        <span className="preview-bar-label">SQL Execution</span>
       </div>
-      <div className="preview-body" style={{ padding: '0' }}>
-        <pre className="sql-block">{sql}</pre>
-        <div className="sql-footer">
-          <span className="sql-footer-item">🔒 Sandbox: active</span>
-          <span className="sql-footer-item">📋 Logged</span>
-          <span className="sql-footer-item">⚡ Executing…</span>
+      <div className="preview-body">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px' }}>
+          <div style={{ fontSize: '13px', color: 'rgba(232,233,243,0.6)', flex: 1, fontStyle: 'italic' }}>
+            "What was TechCorp's Q1 revenue?"
+          </div>
+          <div style={{ fontSize: '16px', color: 'rgba(124,131,245,0.4)', flexShrink: 0 }}>→</div>
+          <div style={{ fontSize: '13px', color: 'rgba(232,233,243,0.6)', flex: 1, textAlign: 'right' }}>
+            Exact SQL generated and run in read-only sandbox
+          </div>
         </div>
       </div>
     </div>

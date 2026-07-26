@@ -18,9 +18,7 @@ const TESTIMONIALS = [
     role: 'Head of Data Engineering',
     company: 'Meridian Capital',
     abbr: 'MC',
-    metric: '3× faster reports',
     color: '#7c83f5',
-    size: 'tall',
   },
   {
     quote: "The cache-first approach is genuinely clever. We're hitting sub-30ms on 80% of our queries. The AI cost reduction alone paid for the switch in the first month.",
@@ -28,57 +26,14 @@ const TESTIMONIALS = [
     role: 'Senior Data Scientist',
     company: 'Stackline Data',
     abbr: 'SD',
-    metric: '87% cost reduction',
     color: '#34d399',
-    size: 'normal',
-  },
-  {
-    quote: "Plain English queries that return exact SQL results — not summaries, not approximations. Our finance team actually trusts the output now.",
-    name: 'Oliver Braun',
-    role: 'VP of Product',
-    company: 'Novafront Labs',
-    abbr: 'NL',
-    metric: '100% exact answers',
-    color: '#a78bfa',
-    size: 'normal',
-  },
-  {
-    quote: "I was skeptical about ditching vector search. But Zenntraa's deterministic tools mean we never get hallucinated revenue figures. That's non-negotiable in finance.",
-    name: 'Sara Lindqvist',
-    role: 'Quantitative Analyst',
-    company: 'Aurelian Group',
-    abbr: 'AG',
-    metric: 'Zero hallucinations',
-    color: '#fbbf24',
-    size: 'tall',
-  },
-  {
-    quote: "Setup took under an hour. The sandboxed execution gave our security team peace of mind immediately — read-only by default, every query logged.",
-    name: 'Marcus Chen',
-    role: 'Platform Engineer',
-    company: 'Crestview Analytics',
-    abbr: 'CA',
-    metric: '<1hr to production',
-    color: '#f472b6',
-    size: 'normal',
-  },
-  {
-    quote: "Our junior analysts can now query financial data without knowing a single line of SQL. Zenntraa just works — and keeps working even under load.",
-    name: 'Adaeze Okafor',
-    role: 'Financial Analyst',
-    company: 'Pinebrook Ventures',
-    abbr: 'PV',
-    metric: 'Used by whole team',
-    color: '#38bdf8',
-    size: 'normal',
   },
 ];
 
 const STATS = [
   { value: 6,    suffix: '',   label: 'companies in beta',   color: '#7c83f5' },
-  { value: 50,   suffix: 'ms', label: 'avg cache response',  color: '#34d399' },
-  { value: 90,   suffix: '%',  label: 'avg cost saved',      color: '#a78bfa' },
-  { value: 0,    suffix: '',   label: 'hallucinated answers', color: '#fbbf24' },
+  { value: 83,   suffix: '%',  label: 'avg cache hit rate',  color: '#34d399' },
+  { value: 90,   suffix: '%',  label: 'avg cost reduction',  color: '#a78bfa' },
 ];
 
 function useInView(threshold = 0.12) {
@@ -131,7 +86,7 @@ function TCard({ t, index }: { t: typeof TESTIMONIALS[0]; index: number }) {
   return (
     <div
       ref={ref}
-      className={`zsp-tcard zsp-tcard-${t.size}`}
+      className="zsp-tcard"
       style={{
         '--card-color': t.color,
         opacity: inView ? 1 : 0,
@@ -143,18 +98,6 @@ function TCard({ t, index }: { t: typeof TESTIMONIALS[0]; index: number }) {
       <div className="zsp-tcard-bar" style={{ background: t.color }} />
 
       <div className="zsp-tcard-inner">
-        {/* Top row */}
-        <div className="zsp-tcard-top">
-          <div className="zsp-metric" style={{
-            color: t.color,
-            background: `${t.color}14`,
-            borderColor: `${t.color}30`,
-          }}>
-            {t.metric}
-          </div>
-          <div className="zsp-stars">★★★★★</div>
-        </div>
-
         {/* Quote */}
         <p className="zsp-quote">"{t.quote}"</p>
 
@@ -181,10 +124,6 @@ export default function SocialProofSection() {
   const { ref: headRef, inView: headIn } = useInView(0.2);
   const { ref: statsRef, inView: statsIn } = useInView(0.2);
 
-  // Split into 3 columns for masonry
-  const col1 = [TESTIMONIALS[0], TESTIMONIALS[3]];
-  const col2 = [TESTIMONIALS[1], TESTIMONIALS[4]];
-  const col3 = [TESTIMONIALS[2], TESTIMONIALS[5]];
 
   return (
     <>
@@ -267,70 +206,12 @@ export default function SocialProofSection() {
         }
         .zsp-sub.vis { opacity: 1; transform: translateY(0); }
 
-        /* ── Marquee ── */
-        .zsp-marquee-wrap {
-          margin-bottom: 72px;
-          overflow: hidden;
-          position: relative;
-          mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
-        }
-
-        .zsp-marquee-track {
-          display: flex;
-          gap: 12px;
-          width: max-content;
-          animation: marquee 28s linear infinite;
-        }
-
-        .zsp-marquee-track:hover { animation-play-state: paused; }
-
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-
-        .zsp-company-chip {
-          display: flex; align-items: center; gap: 9px;
-          padding: 8px 16px 8px 8px;
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 100px;
-          background: rgba(255,255,255,0.03);
-          white-space: nowrap;
-          transition: border-color 0.2s, background 0.2s;
-          cursor: default;
-        }
-
-        .zsp-company-chip:hover {
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.14);
-        }
-
-        .zsp-chip-dot {
-          width: 28px; height: 28px;
-          border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 10px; font-weight: 700;
-          flex-shrink: 0;
-        }
-
-        .zsp-chip-name {
-          font-size: 13px; font-weight: 500;
-          color: rgba(232,233,243,0.55);
-          letter-spacing: -0.01em;
-        }
-
-        /* ── Masonry grid ── */
-        .zsp-masonry {
+        /* ── Testimonials grid (2 columns) ── */
+        .zsp-masonry-2col {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 16px;
-          align-items: start;
           margin-bottom: 80px;
-        }
-
-        .zsp-col {
-          display: flex; flex-direction: column; gap: 16px;
         }
 
         /* ── Testimonial card ── */
@@ -362,23 +243,6 @@ export default function SocialProofSection() {
           display: flex; flex-direction: column; gap: 14px;
         }
 
-        .zsp-tcard-top {
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 10px;
-        }
-
-        .zsp-metric {
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 10px; font-weight: 700;
-          letter-spacing: 0.08em; text-transform: uppercase;
-          padding: 4px 10px; border-radius: 100px;
-          border: 1px solid;
-        }
-
-        .zsp-stars {
-          font-size: 11px; color: #fbbf24;
-          letter-spacing: 1px; opacity: 0.8;
-        }
 
         .zsp-quote {
           font-size: 13.5px; color: rgba(232,233,243,0.6);
@@ -413,7 +277,7 @@ export default function SocialProofSection() {
         /* ── Stats ── */
         .zsp-stats-wrap {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 2px;
           border-radius: 16px;
           overflow: hidden;
@@ -516,34 +380,9 @@ export default function SocialProofSection() {
             </p>
           </div>
 
-          {/* Marquee */}
-          <div className="zsp-marquee-wrap">
-            <div className="zsp-marquee-track">
-              {[...COMPANIES, ...COMPANIES, ...COMPANIES, ...COMPANIES].map((c, i) => (
-                <div key={i} className="zsp-company-chip">
-                  <div
-                    className="zsp-chip-dot"
-                    style={{ background: `${c.color}20`, color: c.color, border: `1px solid ${c.color}35` }}
-                  >
-                    {c.abbr}
-                  </div>
-                  <span className="zsp-chip-name">{c.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Masonry testimonials */}
-          <div className="zsp-masonry">
-            <div className="zsp-col">
-              {col1.map((t, i) => <TCard key={t.name} t={t} index={i * 2} />)}
-            </div>
-            <div className="zsp-col">
-              {col2.map((t, i) => <TCard key={t.name} t={t} index={i * 2 + 1} />)}
-            </div>
-            <div className="zsp-col">
-              {col3.map((t, i) => <TCard key={t.name} t={t} index={i * 2 + 2} />)}
-            </div>
+          {/* Testimonials (2 only) */}
+          <div className="zsp-masonry-2col">
+            {TESTIMONIALS.map((t, i) => <TCard key={t.name} t={t} index={i} />)}
           </div>
 
           {/* Stats */}

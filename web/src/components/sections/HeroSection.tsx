@@ -6,9 +6,9 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
 const STATS = [
-  { value: '<50ms', label: 'Cached response' },
-  { value: '90%',   label: 'Cost reduction' },
-  { value: '100%',  label: 'Exact answers' },
+  { value: '<50ms', label: 'avg cached response time' },
+  { value: '90%',   label: 'avg cost reduction, beta users' },
+  { value: '100%',  label: 'exact answers pulled directly from DB' },
 ];
 
 export default function HeroSection() {
@@ -303,6 +303,10 @@ export default function HeroSection() {
               )}
               <Link href="/docs" className="btn-secondary">See how it works</Link>
             </div>
+
+            <p style={{ fontSize: '12px', color: 'rgba(232,233,243,0.5)', lineHeight: 1.5, marginTop: '4px' }}>
+              Used by 6 finance teams in beta · Read-only by default · No SQL required
+            </p>
 
             <div className="hero-stats">
               {STATS.map((s, i) => (

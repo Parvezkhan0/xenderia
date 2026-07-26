@@ -51,7 +51,7 @@ function SpeedCard({ inView }: { inView: boolean }) {
     <div className="bento-card bento-speed">
       <div className="bento-label">⚡ Speed</div>
       <h3 className="bento-title">Sub-50ms<br />responses</h3>
-      <p className="bento-desc">Cache-first architecture. Repeated queries skip the AI entirely and return from memory in milliseconds.</p>
+      <p className="bento-desc">Your database is never modified.</p>
       <div className="speed-query-list">
         {queries.map((q, i) => (
           <div key={i} className={`speed-row ${active >= i ? 'speed-row-in' : ''}`}
@@ -88,6 +88,7 @@ function AccuracyCard({ inView }: { inView: boolean }) {
     <div className="bento-card bento-accuracy">
       <div className="bento-label">🎯 Accuracy</div>
       <h3 className="bento-title">Exact numbers,<br />every time</h3>
+      <p className="bento-desc">Your database is never modified.</p>
       <div className="accuracy-flow">
         <div className={`acc-step ${step >= 1 ? 'acc-step-in' : ''}`}>
           <div className="acc-bubble acc-query">"What was TechCorp's Q1 revenue?"</div>
@@ -115,6 +116,7 @@ function CostCard({ inView }: { inView: boolean }) {
     <div className="bento-card bento-cost">
       <div className="bento-label">💸 Cost</div>
       <h3 className="bento-title">90% cost<br />reduction</h3>
+      <p className="bento-desc">Your database is never modified.</p>
       <div className="cost-meter">
         <div className="cost-bar-wrap">
           <span className="cost-bar-label">Without Zenntraa</span>
@@ -139,101 +141,7 @@ function CostCard({ inView }: { inView: boolean }) {
   );
 }
 
-// ── Security Card ──────────────────────────────────
-function SecurityCard() {
-  const logs = [
-    { time: '09:41:02', action: 'SELECT executed', status: 'ok' },
-    { time: '09:41:05', action: 'INSERT blocked', status: 'blocked' },
-    { time: '09:41:09', action: 'SELECT executed', status: 'ok' },
-    { time: '09:41:14', action: 'DROP TABLE blocked', status: 'blocked' },
-  ];
-  return (
-    <div className="bento-card bento-security">
-      <div className="bento-label">🔒 Security</div>
-      <h3 className="bento-title">Read-only.<br />Sandboxed.</h3>
-      <div className="sec-log">
-        {logs.map((l, i) => (
-          <div key={i} className="sec-row" style={{ animationDelay: `${i * 0.12}s` }}>
-            <span className="sec-time">{l.time}</span>
-            <span className="sec-action">{l.action}</span>
-            <span className={`sec-status ${l.status}`}>{l.status === 'ok' ? '✓' : '✗'}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
-// ── Simplicity Card (large) ────────────────────────
-function SimplicityCard() {
-  const examples = [
-    'What was our highest revenue quarter?',
-    'Compare Q1 vs Q2 net margins',
-    'Which companies had negative growth?',
-    'Show me EBITDA for all healthcare companies',
-  ];
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setIdx(p => (p + 1) % examples.length), 2200);
-    return () => clearInterval(t);
-  }, []);
-
-  return (
-    <div className="bento-card bento-simplicity">
-      <div className="bento-label">💬 Simplicity</div>
-      <h3 className="bento-title">Just ask.<br />In plain English.</h3>
-      <p className="bento-desc">No SQL knowledge, no dashboards, no waiting on a data team. Ask like you'd ask a colleague.</p>
-      <div className="simp-input-wrap">
-        <div className="simp-avatar">Z</div>
-        <div className="simp-bubble">
-          <span key={idx} className="simp-text">{examples[idx]}</span>
-          <span className="simp-cursor" />
-        </div>
-      </div>
-      <div className="simp-tags">
-        {['Revenue queries', 'Margin analysis', 'YoY comparisons', 'Rankings'].map(t => (
-          <span key={t} className="simp-tag">{t}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Reliability Card ───────────────────────────────
-function ReliabilityCard() {
-  return (
-    <div className="bento-card bento-reliability">
-      <div className="bento-label">🔄 Reliability</div>
-      <h3 className="bento-title">Self-healing<br />circuit breaker</h3>
-      <div className="rel-states">
-        <div className="rel-state rel-closed">
-          <span className="rel-dot green" />
-          <div>
-            <div className="rel-state-name">CLOSED</div>
-            <div className="rel-state-sub">Cache active · Full speed</div>
-          </div>
-        </div>
-        <div className="rel-arrow-h">→</div>
-        <div className="rel-state rel-open">
-          <span className="rel-dot amber" />
-          <div>
-            <div className="rel-state-name">OPEN</div>
-            <div className="rel-state-sub">Degraded · Fallback active</div>
-          </div>
-        </div>
-        <div className="rel-arrow-h">→</div>
-        <div className="rel-state rel-half">
-          <span className="rel-dot violet" />
-          <div>
-            <div className="rel-state-name">HALF-OPEN</div>
-            <div className="rel-state-sub">Recovering · Auto-heal</div>
-          </div>
-        </div>
-      </div>
-      <p className="bento-desc" style={{marginTop:'12px'}}>No crashes. No manual restarts. The system keeps serving answers while it heals itself.</p>
-    </div>
-  );
-}
 
 // ── Main export ────────────────────────────────────
 export default function FeaturesSection() {
@@ -358,12 +266,9 @@ export default function FeaturesSection() {
         }
 
         /* Grid placement */
-        .bento-speed      { grid-column: span 5; }
+        .bento-speed      { grid-column: span 4; }
         .bento-accuracy   { grid-column: span 4; }
-        .bento-cost       { grid-column: span 3; }
-        .bento-security   { grid-column: span 3; }
-        .bento-reliability{ grid-column: span 4; }
-        .bento-simplicity { grid-column: span 5; }
+        .bento-cost       { grid-column: span 4; }
 
         /* Shared card text */
         .bento-label {
@@ -606,25 +511,16 @@ export default function FeaturesSection() {
 
         /* ── Responsive ── */
         @media (max-width: 1000px) {
-          .bento-speed      { grid-column: span 6; }
-          .bento-accuracy   { grid-column: span 6; }
-          .bento-cost       { grid-column: span 4; }
-          .bento-security   { grid-column: span 4; }
-          .bento-reliability{ grid-column: span 4; }
-          .bento-simplicity { grid-column: span 12; }
-          .simp-input-wrap  { max-width: 480px; }
+          .bento-speed, .bento-accuracy, .bento-cost { grid-column: span 4; }
         }
 
         @media (max-width: 680px) {
           .bento-grid { grid-template-columns: 1fr; gap: 12px; }
-          .bento-speed, .bento-accuracy, .bento-cost,
-          .bento-security, .bento-reliability, .bento-simplicity {
+          .bento-speed, .bento-accuracy, .bento-cost {
             grid-column: span 1;
           }
           .zf-section { padding: 80px 16px 90px; }
           .zf-head { margin-bottom: 44px; }
-          .rel-states { flex-direction: column; }
-          .rel-arrow-h { transform: rotate(90deg); }
         }
       `}</style>
 
@@ -654,9 +550,6 @@ export default function FeaturesSection() {
             <SpeedCard inView={secIn} />
             <AccuracyCard inView={secIn} />
             <CostCard inView={secIn} />
-            <SecurityCard />
-            <ReliabilityCard />
-            <SimplicityCard />
           </div>
 
           <div className="zf-footer">
