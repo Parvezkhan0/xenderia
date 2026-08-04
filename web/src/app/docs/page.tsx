@@ -23,6 +23,8 @@ const NAV_SECTIONS: NavSection[] = [
       { href: "what-is-zenntraa", label: "What is Zenntraa?" },
       { href: "how-it-works", label: "How It Works" },
       { href: "connect-database", label: "Connect Your Database" },
+      { href: "upload-csv", label: "Upload a CSV" },
+      { href: "data-sources", label: "Data Sources" },
       { href: "first-query", label: "Your First Query" },
     ],
   },
@@ -545,10 +547,94 @@ export default function DocsPage() {
               </Step>
             </div>
 
+            <p style={pStyle}>
+              If you have a CSV uploaded, you will need to remove it first before connecting a database.
+              Only one data source can be active at a time.
+            </p>
+
             <WarnTip>
               <strong style={{ color: "var(--z-warn)" }}>Note:</strong> Zenntraa only ever reads from your database —
               it cannot write, update, or delete any records. Your data is safe.
             </WarnTip>
+          </section>
+
+          <Divider />
+
+          {/* ── UPLOAD A CSV ── */}
+          <section id="upload-csv" style={sectionStyle}>
+            <SectionTag>Setup</SectionTag>
+            <h2 style={h2Style}>Upload a CSV</h2>
+            <p style={pStyle}>
+              Don&apos;t have a PostgreSQL database? You can upload a CSV file and start querying it
+              straight away. No database setup needed.
+            </p>
+            <p style={pStyle}>
+              Go to <strong>Settings</strong> in your dashboard and look for the{" "}
+              <strong>Upload a CSV</strong> card.
+            </p>
+
+            <div style={{ margin: "24px 0" }}>
+              <Step num={1} title="Open Settings">
+                Click the <strong>Settings</strong> icon in the left sidebar.
+              </Step>
+              <Step num={2} title="Choose your file">
+                Click <strong>Choose CSV file</strong> and select a <InlineCode>.csv</InlineCode> file from
+                your computer. Maximum file size is 15 MB.
+              </Step>
+              <Step num={3} title="Upload">
+                Zenntraa reads the file, detects column types automatically, and makes it ready to query.
+              </Step>
+              <Step num={4} title="Start querying">
+                Go to the Query page. Your CSV is now the active data source.
+              </Step>
+            </div>
+
+            <p style={pStyle}>
+              Only one CSV can be active at a time. Uploading a new file replaces the previous one.
+            </p>
+
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 10 }}>What Zenntraa detects automatically</h3>
+            <ul style={{ margin: "8px 0 16px", paddingLeft: 22, color: "#c9cdd8", fontSize: 15, lineHeight: 1.85 }}>
+              <li>Numbers including values formatted with commas like 1,200,000</li>
+              <li>Dates in standard formats</li>
+              <li>Text, IDs, and codes where leading zeros matter (so 07001 stays 07001, not 7001)</li>
+            </ul>
+
+            <WarnTip>
+              <strong style={{ color: "var(--z-warn)" }}>Note:</strong> You cannot connect a PostgreSQL
+              database and have a CSV active at the same time. If you connect a database, the CSV will no
+              longer be used. If you upload a CSV, the database connection form will be unavailable until
+              you remove the CSV.
+            </WarnTip>
+          </section>
+
+          <Divider />
+
+          {/* ── DATA SOURCES ── */}
+          <section id="data-sources" style={sectionStyle}>
+            <SectionTag>Setup</SectionTag>
+            <h2 style={h2Style}>Data Sources</h2>
+            <p style={pStyle}>
+              Zenntraa works with three data sources and only one is active at a time.
+            </p>
+
+            <Table
+              headers={["Source", "When it is used"]}
+              rows={[
+                ["PostgreSQL", "When you have connected your own database under Settings"],
+                ["CSV", "When you have uploaded a CSV file and no database is connected"],
+                ["Demo database", "When neither is connected. Sample financial data to explore the product"],
+              ]}
+            />
+
+            <p style={pStyle}>
+              You can see your active source on the Query page. A chip in the top right shows whether you
+              are on Demo, CSV, or your own database.
+            </p>
+            <p style={pStyle}>
+              To switch: connect a PostgreSQL database to replace an active CSV, upload a new CSV to replace
+              the current one, or remove your CSV to go back to the demo.
+            </p>
           </section>
 
           <Divider />
@@ -770,6 +856,36 @@ export default function DocsPage() {
               You&apos;ve sent more than 60 queries in a minute. Wait a moment and resume.
               If you need higher limits, contact us to discuss your plan.
             </p>
+
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>My CSV uploaded but the numbers look wrong</h3>
+            <p style={pStyle}>
+              If your CSV had numbers formatted with commas like 1,200,000, Zenntraa removes the commas
+              before storing so calculations work correctly. If results still look off, check that the
+              column contains only numeric values with no mixed text.
+            </p>
+
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>My CSV data is gone</h3>
+            <p style={pStyle}>
+              CSV data is kept between sessions but can be lost if the server restarts. If this happens,
+              go to Settings and upload the file again. Your query history will not be affected.
+            </p>
+
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>I want to query a different CSV</h3>
+            <p style={pStyle}>
+              Go to Settings, remove the current CSV, then upload the new one. Only one CSV can be active
+              at a time.
+            </p>
+
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>The database connection form is greyed out</h3>
+            <p style={pStyle}>
+              This happens when a CSV is already uploaded. Remove the CSV first, then you can connect a database.
+            </p>
+
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>The CSV upload card is greyed out</h3>
+            <p style={pStyle}>
+              This happens when a database is already connected. Disconnect the database first, then you can
+              upload a CSV.
+            </p>
           </section>
 
           <Divider />
@@ -797,7 +913,19 @@ export default function DocsPage() {
             />
             <FaqItem
               q="What databases does Zenntraa support?"
-              a="Zenntraa currently supports PostgreSQL. If you're on the demo, it uses a built-in database with sample financial data. Connect your own PostgreSQL database under Settings."
+              a="Zenntraa supports PostgreSQL databases and CSV file uploads. If you are on the demo, it uses built-in sample financial data. You can set up either under Settings, but not both at the same time."
+            />
+            <FaqItem
+              q="Can I have both a CSV and a PostgreSQL database at the same time?"
+              a="No. Zenntraa uses one data source at a time. Remove the current one first and then set up the other."
+            />
+            <FaqItem
+              q="Will my CSV still be there when I come back?"
+              a="Usually yes. Your CSV stays between sessions. In rare cases it may be cleared if there is a server restart, and you would just need to upload the file again from Settings."
+            />
+            <FaqItem
+              q="What is the CSV file size limit?"
+              a="15 MB. If your file is larger, consider splitting it or using a PostgreSQL database instead."
             />
             <FaqItem
               q="What's a good cache hit rate?"

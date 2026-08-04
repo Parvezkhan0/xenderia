@@ -463,6 +463,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [systemOnline, setSystemOnline] = useState<boolean | null>(null);
   const [dbConnected, setDbConnected] = useState(false);
   const [entitlements, setEntitlements] = useState<EntitlementsResponse | null>(null);
+  const [showEmail, setShowEmail] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -854,11 +855,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="zdl-footer">
-            <div className="zdl-user">
+            <div
+              className="zdl-user"
+              onClick={() => setShowEmail((v) => !v)}
+              style={{ cursor: 'pointer' }}
+              title={showEmail ? 'Hide email' : 'Show email'}
+            >
               <div className="zdl-avatar">{userInitial}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="zdl-user-name">{userName}</div>
                 <div className="zdl-user-plan">{isPro ? 'Pro plan' : 'Starter'}</div>
+                {showEmail && user.email && (
+                  <div style={{
+                    fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--muted)',
+                    letterSpacing: '0.02em', marginTop: 3,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+                  }}>
+                    {user.email}
+                  </div>
+                )}
               </div>
             </div>
             <button className="zdl-signout" onClick={handleSignOut}>
