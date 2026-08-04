@@ -46,6 +46,33 @@ except ImportError:
 logger = structlog.get_logger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Server-side result caps
+# ---------------------------------------------------------------------------
+# These bound what a single query can return so a large table (e.g. an
+# uploaded CSV) can never load an unbounded result set into memory or blow up
+# the LLM prompt. Aggregates (SUM/COUNT/AVG) return few rows and are unaffected.
+MAX_RESULT_ROWS = 200            # hard ceiling on rows returned
+MAX_RESULT_BYTES = 256 * 1024    # ceiling on serialized row payload (~256 KB)
+
+
+def _cap_rows_by_bytes(rows: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], bool]:
+    """
+    Trim trailing rows until the JSON-serialized payload is under
+    MAX_RESULT_BYTES. Guards against wide/blob columns bloating the prompt
+    even when the row count is already capped.
+
+    Returns (possibly-trimmed rows, truncated_flag).
+    """
+    import json
+    truncated = False
+    while len(rows) > 1 and len(json.dumps(rows, default=str)) > MAX_RESULT_BYTES:
+        drop = max(1, len(rows) // 10)   # shed ~10% per pass; converges fast for <=200 rows
+        rows = rows[:-drop]
+        truncated = True
+    return rows, truncated
+
+
 class AsyncConnectionPool:
     """
     Async connection pool for SQLite database connections.
@@ -442,31 +469,39 @@ class DatabaseManager:
                 db.row_factory = aiosqlite.Row
                 
                 cursor = await db.execute(statement)
-                rows = await cursor.fetchall()
-                
+                # Fetch at most MAX_RESULT_ROWS+1 so truncation can be detected
+                # without ever materializing an unbounded result set.
+                fetched = await cursor.fetchmany(MAX_RESULT_ROWS + 1)
+                row_truncated = len(fetched) > MAX_RESULT_ROWS
+                fetched = fetched[:MAX_RESULT_ROWS]
+
                 # Convert rows to dictionaries
                 structured_results = []
                 columns = []
-                
-                if rows:
+
+                if fetched:
                     # Get column names from first row
-                    columns = list(rows[0].keys())
-                    
+                    columns = list(fetched[0].keys())
+
                     # Convert each row to dictionary
-                    for row in rows:
+                    for row in fetched:
                         row_dict = {col: row[col] for col in columns}
                         structured_results.append(row_dict)
-                
+
                 await cursor.close()
-                
+
+                # Byte guard: capped rows can still be huge if columns are wide.
+                structured_results, byte_truncated = _cap_rows_by_bytes(structured_results)
+
                 end_time = time.time()
                 execution_time_ms = (end_time - start_time) * 1000
-                
+
                 result = QueryResult(
                     rows=structured_results,
                     row_count=len(structured_results),
                     columns=columns,
-                    execution_time_ms=execution_time_ms
+                    execution_time_ms=execution_time_ms,
+                    truncated=row_truncated or byte_truncated,
                 )
                 
                 logger.info("Query executed successfully",
@@ -730,6 +765,15 @@ class PostgreSQLManager:
                 for row in rows
             ]
 
+            # Apply the same server-side caps as the SQLite path so a large
+            # result can't blow up the LLM prompt. NOTE: asyncpg's conn.fetch
+            # already buffers the full result set in memory here — this cap
+            # bounds the prompt payload, not PG-side memory. Bounding that
+            # would need a server-side cursor (deferred, documented).
+            row_truncated = len(structured) > MAX_RESULT_ROWS
+            structured = structured[:MAX_RESULT_ROWS]
+            structured, byte_truncated = _cap_rows_by_bytes(structured)
+
             logger.info(
                 "PostgreSQL query executed",
                 row_count=len(structured),
@@ -741,6 +785,7 @@ class PostgreSQLManager:
                 row_count=len(structured),
                 columns=columns,
                 execution_time_ms=round(elapsed_ms, 2),
+                truncated=row_truncated or byte_truncated,
             )
 
         except (SecurityError, InvalidSQLError):
@@ -852,6 +897,10 @@ class MultiTenantManager:
         self.pools: Dict[str, Any] = {}
         # uid → PostgreSQLManager (wraps pool with validation + schema)
         self._managers: Dict[str, PostgreSQLManager] = {}
+        # uid → DatabaseManager over that user's CSV-ingested SQLite file.
+        # Kept separate from the Postgres pools; routing precedence is:
+        #   own Postgres pool → CSV SQLite → demo SQLite.
+        self._sqlite_managers: Dict[str, "DatabaseManager"] = {}
 
     # ------------------------------------------------------------------
     async def add_user_pool(self, uid: str, credentials: dict) -> None:
@@ -903,6 +952,42 @@ class MultiTenantManager:
         Returns None if neither uid nor "shared" pool exists.
         """
         return self._managers.get(uid) or self._managers.get("shared")
+
+    # ------------------------------------------------------------------
+    # Per-user CSV-backed SQLite registry
+    # ------------------------------------------------------------------
+    async def register_user_csv(self, uid: str, db_path: str) -> None:
+        """
+        Register (or replace) the SQLite database holding this user's ingested
+        CSV data. The DatabaseManager is constructed with `db_path` so its
+        query validation (EXPLAIN QUERY PLAN) and execution both target the
+        correct per-user file.
+        """
+        existing = self._sqlite_managers.get(uid)
+        if existing is not None:
+            # Close the previous pool before replacing so it doesn't leak.
+            try:
+                await existing.cleanup()
+            except Exception as e:
+                logger.warning("Failed to close previous CSV manager", uid=uid, error=str(e))
+
+        self._sqlite_managers[uid] = DatabaseManager(db_path)
+        logger.info("CSV SQLite manager registered", uid=uid, db_path=db_path)
+
+    def get_sqlite_manager_for_uid(self, uid: str) -> "Optional[DatabaseManager]":
+        """Return this user's CSV-backed SQLite manager, or None."""
+        return self._sqlite_managers.get(uid)
+
+    def has_user_csv(self, uid: str) -> bool:
+        """True if this user has a CSV-backed SQLite database registered."""
+        return uid in self._sqlite_managers
+
+    async def remove_user_csv(self, uid: str) -> None:
+        """Close and drop this user's CSV SQLite manager (on disconnect/replace)."""
+        manager = self._sqlite_managers.pop(uid, None)
+        if manager is not None:
+            await manager.cleanup()
+            logger.info("CSV SQLite manager removed", uid=uid)
 
     # ------------------------------------------------------------------
     async def execute_query(self, statement: str) -> "QueryResult":

@@ -280,17 +280,56 @@ class FACTDriver:
 
                     iteration += 1
 
-            # Extract response content from Anthropic SDK response
+            # If the last turn ended on tool_use, the agent loop stopped while the
+            # model still wanted to call a tool (e.g. it hit max_iterations). Any
+            # text on that turn is an unfinished lead-in ("Now let's look at...",
+            # "Next I'll..."), NOT a completed answer — never show it. Instead make
+            # one final, tool-free call so the model synthesizes a complete answer
+            # from the data already gathered. Passing tools=[] means no tools and no
+            # tool_choice are sent, so this call cannot emit tool_use and cannot loop.
+            if getattr(response, "stop_reason", None) == "tool_use":
+                logger.warning(
+                    "LLM turn ended on tool_use before a final answer — running one "
+                    "tool-free synthesis call",
+                    query_id=query_id,
+                )
+                try:
+                    response = await self._call_llm_with_cache(
+                        messages=messages,
+                        tools=[],
+                        cache_mode="read",
+                        user_id=user_id,
+                    )
+                except Exception as synth_error:
+                    logger.error(
+                        "Synthesis call failed",
+                        query_id=query_id,
+                        error=str(synth_error),
+                    )
+
+            # Extract response content — but only from a turn that actually
+            # completed. If we still ended on tool_use (should not happen after a
+            # tool-free synthesis call), treat it as no usable answer.
             response_text = ""
-            if hasattr(response, 'content') and response.content:
+            if getattr(response, "stop_reason", None) != "tool_use" and \
+                    hasattr(response, 'content') and response.content:
                 for block in response.content:
                     if hasattr(block, 'type') and block.type == 'text':
                         response_text += block.text
 
-            # If no text content found, provide informative message
-            if not response_text:
-                logger.warning("No text response received from LLM", query_id=query_id)
-                response_text = "I apologize, but I was unable to generate a proper response. Please try rephrasing your question."
+            # No usable answer — show a clear, user-friendly message. Keep the
+            # technical reason in the logs only; never expose it to the user.
+            if not response_text.strip():
+                logger.warning(
+                    "No usable answer produced for query",
+                    query_id=query_id,
+                    stop_reason=getattr(response, "stop_reason", None),
+                )
+                response_text = (
+                    "I couldn't put together a complete answer to that question. "
+                    "Try narrowing it down — for example, ask about a single metric "
+                    "or one time period at a time — and I'll give you a full breakdown."
+                )
 
             # Step 3: Store response in cache for future use (scoped by user)
             if not self._cache_degraded and self.cache_system and response_text:

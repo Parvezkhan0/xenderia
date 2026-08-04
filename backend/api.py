@@ -914,6 +914,7 @@ Run with:
     uvicorn api:app --reload --port 8000
 """
 
+import asyncio
 import json
 import os
 import re
@@ -922,7 +923,7 @@ import traceback
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import requests
 
@@ -941,6 +942,7 @@ from src.db.connection import current_user_uid, db_manager, PostgreSQLManager
 from src.security.auth import verify_firebase_token
 from src.core.errors import AuthenticationError, DatabaseError, SecurityError
 from src.tools.connectors.excel import initialize_excel_tool, get_excel_tool
+from src.tools.connectors.csv_ingest import ingest_csv_to_sqlite, MAX_CSV_BYTES
 
 # ── Billing / Firestore helpers ────────────────────────────────────────────
 from billing import (
@@ -978,6 +980,14 @@ total_latency_ms = 0.0
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
 EXCEL_UPLOAD_ROOT = BASE_DIR / "uploads" / "excel"
+CSV_UPLOAD_ROOT = BASE_DIR / "uploads" / "csv"
+
+# In-memory record of each user's ingested CSV tables (table -> column/row meta),
+# used only for reporting in /database/status. This is per-process and NOT durable:
+# it is lost on redeploy/restart, matching the ephemeral on-disk SQLite files
+# (Render's filesystem is wiped on redeploy). The queryable source of truth is the
+# per-user SQLite DB registered in db_manager.
+_user_csv_tables: Dict[str, Dict[str, dict]] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -1115,12 +1125,27 @@ class DatabaseConnectResponse(BaseModel):
 class DatabaseStatusResponse(BaseModel):
     connected: bool
     uses_demo: bool
+    source: Optional[str] = None        # 'demo' | 'postgres' | 'csv'
     db_type: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None
     database: Optional[str] = None
     username: Optional[str] = None
+    tables: Optional[List[str]] = None  # populated for the 'csv' source
     message: str
+
+
+class CsvColumnInfo(BaseModel):
+    name: str
+    type: str
+
+
+class CsvUploadResponse(BaseModel):
+    success: bool
+    message: str
+    table: str
+    columns: List[CsvColumnInfo]
+    row_count: int
 
 
 class EntitlementsResponse(BaseModel):
@@ -1201,6 +1226,50 @@ def _clear_user_schema_cache(uid: str) -> None:
     if driver is not None:
         driver._schema_cache.pop(uid, None)
         driver._schema_prompt_cache.pop(uid, None)
+
+
+def _user_csv_db_path(uid: str) -> Path:
+    """Path to this user's CSV-backed SQLite database."""
+    return CSV_UPLOAD_ROOT / uid / "data.db"
+
+
+def _list_sqlite_tables(db_path: Path) -> List[str]:
+    """Return user table names from a SQLite file (sync, best-effort)."""
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(db_path))
+        try:
+            rows = conn.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            ).fetchall()
+            return [r[0] for r in rows]
+        finally:
+            conn.close()
+    except Exception:
+        return []
+
+
+async def _restore_user_csv(uid: str) -> bool:
+    """
+    Ensure this user's CSV SQLite manager is registered if a data.db exists on
+    disk. Mirrors _restore_saved_user_pool for Postgres: makes a CSV source
+    survive a process restart (as long as the disk persists). Returns True if
+    the user has an active CSV source after this call.
+    """
+    if uid == "shared":
+        return False
+    if db_manager.has_user_csv(uid):
+        return True
+
+    db_path = _user_csv_db_path(uid)
+    if db_path.exists():
+        await db_manager.register_user_csv(uid, str(db_path))
+        # Repopulate the in-memory table list for status reporting.
+        _user_csv_tables[uid] = {t: {} for t in _list_sqlite_tables(db_path)}
+        _clear_user_schema_cache(uid)
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1297,6 +1366,13 @@ async def query(request: Request, body: QueryRequest):
             },
         )
     # ─────────────────────────────────────────────────────────────────────
+
+    # Re-activate a previously-uploaded CSV source if the process restarted.
+    # No-op when the user has no CSV or already has an active source.
+    try:
+        await _restore_user_csv(uid)
+    except Exception as e:
+        print(f"⚠️ CSV restore failed for uid={uid}: {e}")
 
     query_id = f"q_{uuid.uuid4().hex}"
     t_start = time.time()
@@ -1545,26 +1621,44 @@ async def database_status(request: Request):
         return DatabaseStatusResponse(
             connected=False,
             uses_demo=True,
+            source="demo",
             message="Using shared SQLite demo database.",
         )
 
+    # Precedence must mirror query routing: own Postgres pool → CSV → demo.
     saved = await _restore_saved_user_pool(uid)
-    if not saved:
+    if saved:
         return DatabaseStatusResponse(
-            connected=False,
+            connected=True,
             uses_demo=False,
-            message="No saved PostgreSQL connection found for this user.",
+            source="postgres",
+            db_type=saved.get("db_type", "postgresql"),
+            host=saved.get("host"),
+            port=saved.get("port"),
+            database=saved.get("database"),
+            username=saved.get("username"),
+            message="Saved PostgreSQL connection restored successfully.",
+        )
+
+    if await _restore_user_csv(uid):
+        tables = list(_user_csv_tables.get(uid, {}).keys())
+        return DatabaseStatusResponse(
+            connected=True,
+            uses_demo=False,
+            source="csv",
+            db_type="csv",
+            tables=tables,
+            message=(
+                f"Querying your uploaded CSV data ({len(tables)} "
+                f"table{'s' if len(tables) != 1 else ''})."
+            ),
         )
 
     return DatabaseStatusResponse(
-        connected=True,
-        uses_demo=False,
-        db_type=saved.get("db_type", "postgresql"),
-        host=saved.get("host"),
-        port=saved.get("port"),
-        database=saved.get("database"),
-        username=saved.get("username"),
-        message="Saved PostgreSQL connection restored successfully.",
+        connected=False,
+        uses_demo=True,
+        source="demo",
+        message="No database or CSV connected — using the shared SQLite demo database.",
     )
 
 
@@ -1603,6 +1697,18 @@ async def connect_database(request: Request, req: DatabaseConnectRequest):
         )
 
         _clear_user_schema_cache(uid)
+
+        # Single active source: a user has EITHER a database OR a CSV, never both.
+        # Connecting a database removes any uploaded CSV so only one source is
+        # ever queried. Best-effort — never fail the connect if this cleanup errors.
+        try:
+            await db_manager.remove_user_csv(uid)
+            _user_csv_tables.pop(uid, None)
+            csv_db = _user_csv_db_path(uid)
+            if csv_db.exists():
+                csv_db.unlink()
+        except Exception as switch_err:
+            print(f"⚠️ Failed to remove CSV after DB connect for uid={uid}: {switch_err}")
 
         return DatabaseConnectResponse(
             success=True,
@@ -1696,6 +1802,123 @@ async def get_excel_sheet_preview(request: Request, body: ExcelPreviewRequest):
         return JSONResponse(status_code=400, content={"status": "failed", "error": str(e)})
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "failed", "error": f"Excel preview error: {e}"})
+
+
+# ---------------------------------------------------------------------------
+# CSV endpoints
+# ---------------------------------------------------------------------------
+@app.post("/api/v1/csv/upload", response_model=CsvUploadResponse)
+async def upload_csv_file(request: Request, file: UploadFile = File(...)):
+    """
+    Upload a .csv file, ingest it into the user's private SQLite database (typed
+    columns), and register it so all natural-language queries route to it.
+    Only ONE CSV is active per user — uploading a new file REPLACES the previous
+    one (old table is dropped). Available to all signed-in users (free and pro).
+    """
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are supported.")
+
+    uid = _resolve_uid_from_request(request, require_auth_in_production=True)
+    if uid == "shared":
+        raise HTTPException(status_code=401, detail="Please sign in to upload a CSV.")
+
+    user_dir = CSV_UPLOAD_ROOT / uid
+    user_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = _sanitize_filename(file.filename)
+    raw_path  = user_dir / f"{uuid.uuid4().hex}_{safe_name}"
+    db_path   = _user_csv_db_path(uid)
+
+    try:
+        content = await file.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        if len(content) > MAX_CSV_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"CSV file is too large. Max {MAX_CSV_BYTES // (1024 * 1024)} MB.",
+            )
+
+        with open(raw_path, "wb") as f:
+            f.write(content)
+
+        # Single active CSV per user: close and delete any existing dataset so
+        # the new upload REPLACES it (one table) rather than adding a table.
+        # Unregister first so no open SQLite handle blocks deleting the file.
+        await db_manager.remove_user_csv(uid)
+        if db_path.exists():
+            try:
+                db_path.unlink()
+            except Exception:
+                pass
+        _user_csv_tables.pop(uid, None)
+
+        # Ingest is CPU/IO-bound and synchronous — run it off the event loop.
+        meta = await asyncio.to_thread(
+            ingest_csv_to_sqlite, str(raw_path), str(db_path), safe_name
+        )
+
+        await db_manager.register_user_csv(uid, str(db_path))
+        _clear_user_schema_cache(uid)
+        _user_csv_tables[uid] = {meta["table"]: meta}
+
+        # Single active source: a user has EITHER a database OR a CSV, never both.
+        # Uploading a CSV disconnects any saved Postgres so only one source is
+        # ever queried. Best-effort — never fail the upload if this cleanup errors.
+        try:
+            await db_manager.remove_user_pool(uid)
+            deactivate_user_db_connection(uid)
+        except Exception as switch_err:
+            print(f"⚠️ Failed to deactivate DB after CSV upload for uid={uid}: {switch_err}")
+
+        return CsvUploadResponse(
+            success=True,
+            message=(
+                f"CSV ingested as table '{meta['table']}' "
+                f"({meta['row_count']} rows). You can now ask questions about it."
+            ),
+            table=meta["table"],
+            columns=[CsvColumnInfo(**c) for c in meta["columns"]],
+            row_count=meta["row_count"],
+        )
+    except HTTPException:
+        raise
+    except ValueError as e:
+        # Ingestion-level validation (oversize, no header, undecodable, etc.)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to ingest CSV: {e}")
+    finally:
+        # The queryable artifact is data.db; the raw upload is not needed after ingest.
+        try:
+            if raw_path.exists():
+                raw_path.unlink()
+        except Exception:
+            pass
+
+
+@app.post("/api/v1/csv/remove", response_model=DatabaseConnectResponse)
+async def remove_csv_file(request: Request):
+    """Remove the user's CSV data source; queries fall back to the demo database."""
+    uid = _resolve_uid_from_request(request, require_auth_in_production=True)
+
+    try:
+        await db_manager.remove_user_csv(uid)
+        _clear_user_schema_cache(uid)
+        _user_csv_tables.pop(uid, None)
+
+        db_path = _user_csv_db_path(uid)
+        if db_path.exists():
+            try:
+                db_path.unlink()
+            except Exception:
+                pass
+
+        return DatabaseConnectResponse(
+            success=True,
+            message="CSV data removed. Queries will use the shared demo database until you upload again.",
+        )
+    except Exception as e:
+        return DatabaseConnectResponse(success=False, message=f"Failed to remove CSV: {e}")
 
 
 # ---------------------------------------------------------------------------

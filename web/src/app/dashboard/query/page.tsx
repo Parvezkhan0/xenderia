@@ -46,6 +46,14 @@ const CONNECTED_SUGGESTIONS = [
   { icon: '📊', text: 'Compare quarterly profits' },
 ];
 
+const CSV_SUGGESTIONS = [
+  { icon: '📋', text: 'What columns are in my data?' },
+  { icon: '🔢', text: 'How many rows are there in total?' },
+  { icon: '📊', text: 'Summarize the key numbers' },
+  { icon: '🏆', text: 'Show the top 10 rows by the largest value' },
+  { icon: '🔎', text: 'Find duplicates or outliers' },
+];
+
 function CacheBadge({ hit, latency }: { hit: boolean; latency: number }) {
   return (
     <span className={`cb ${hit ? 'cb-hit' : 'cb-miss'}`}>
@@ -68,6 +76,29 @@ function formatFinancialNumbers(text: string): string {
   });
 }
 
+// Inline markdown within a single line: `code`, **bold**, *italic* / _italic_.
+// Order matters — bold (**) is matched before italic (*).
+function renderInline(text: string, keyBase: string): React.ReactNode[] {
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*\s][^*]*\*|_[^_\s][^_]*_)/g);
+  return parts.map((part, pi) => {
+    const key = `${keyBase}-${pi}`;
+    if (!part) return null;
+    if (part.length >= 2 && part.startsWith('`') && part.endsWith('`')) {
+      return <code key={key} className="ans-code">{part.slice(1, -1)}</code>;
+    }
+    if (part.length >= 4 && part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={key}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.length >= 2 && part.startsWith('*') && part.endsWith('*')) {
+      return <em key={key}>{part.slice(1, -1)}</em>;
+    }
+    if (part.length >= 2 && part.startsWith('_') && part.endsWith('_')) {
+      return <em key={key}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 function renderAnswer(text: string) {
   text = formatFinancialNumbers(text);
   const lines = text.split('\n');
@@ -78,6 +109,7 @@ function renderAnswer(text: string) {
   while (i < lines.length) {
     const line = lines[i];
 
+    // ── Table ──
     if (line.includes('|') && lines[i + 1] && /^\|?[\s\-:|]+\|/.test(lines[i + 1])) {
       const tableLines: string[] = [];
       while (i < lines.length && lines[i].includes('|')) {
@@ -90,39 +122,78 @@ function renderAnswer(text: string) {
 
       const headers = parseRow(tableLines[0]);
       const bodyRows = tableLines.slice(2);
+      const tk = elementKey++;
 
       output.push(
-        <div key={`table-${elementKey++}`} className="ans-table-wrap">
+        <div key={`table-${tk}`} className="ans-table-wrap">
           <table className="ans-table">
             <thead>
-              <tr>{headers.map((h, ci) => <th key={`th-${ci}`}>{h}</th>)}</tr>
+              <tr>{headers.map((h, ci) => <th key={`th-${ci}`}>{renderInline(h, `th-${tk}-${ci}`)}</th>)}</tr>
             </thead>
             <tbody>
               {bodyRows.map((row, ri) => (
                 <tr key={`tr-${ri}`}>
-                  {parseRow(row).map((cell, ci) => <td key={`td-${ri}-${ci}`}>{cell}</td>)}
+                  {parseRow(row).map((cell, ci) => <td key={`td-${ri}-${ci}`}>{renderInline(cell, `td-${tk}-${ri}-${ci}`)}</td>)}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       );
-    } else {
-      const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, pi) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={`strong-${elementKey}-${pi}`}>{part.slice(2, -2)}</strong>;
-        }
-        return part;
-      });
-
-      if (line.trim() === '') {
-        output.push(<br key={`br-${elementKey++}`} />);
-      } else {
-        output.push(<p key={`p-${elementKey++}`} className="ans-text">{parts}</p>);
-      }
-
-      i++;
+      continue;
     }
+
+    // ── Heading (# … ######) ──
+    const hMatch = line.match(/^(#{1,6})\s+(.*)$/);
+    if (hMatch) {
+      const level = hMatch[1].length;
+      const cls = `ans-h ans-h${Math.min(level, 3)}`;
+      const hk = elementKey++;
+      const inner = renderInline(hMatch[2], `h-${hk}`);
+      if (level <= 2) output.push(<h3 key={`h-${hk}`} className={cls}>{inner}</h3>);
+      else if (level === 3) output.push(<h4 key={`h-${hk}`} className={cls}>{inner}</h4>);
+      else output.push(<h5 key={`h-${hk}`} className={cls}>{inner}</h5>);
+      i++;
+      continue;
+    }
+
+    // ── Unordered list ──
+    if (/^\s*[-*]\s+/.test(line)) {
+      const lk = elementKey++;
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+        const content = lines[i].replace(/^\s*[-*]\s+/, '');
+        items.push(<li key={`uli-${lk}-${items.length}`}>{renderInline(content, `uli-${lk}-${items.length}`)}</li>);
+        i++;
+      }
+      output.push(<ul key={`ul-${lk}`} className="ans-list">{items}</ul>);
+      continue;
+    }
+
+    // ── Ordered list ──
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const lk = elementKey++;
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        const content = lines[i].replace(/^\s*\d+\.\s+/, '');
+        items.push(<li key={`oli-${lk}-${items.length}`}>{renderInline(content, `oli-${lk}-${items.length}`)}</li>);
+        i++;
+      }
+      output.push(<ol key={`ol-${lk}`} className="ans-list">{items}</ol>);
+      continue;
+    }
+
+    // ── Blank line ──
+    if (line.trim() === '') {
+      output.push(<br key={`br-${elementKey++}`} />);
+      i++;
+      continue;
+    }
+
+    // ── Paragraph ──
+    const pk = elementKey++;
+    output.push(<p key={`p-${pk}`} className="ans-text">{renderInline(line, `p-${pk}`)}</p>);
+    i++;
   }
 
   return <div className="ans-content">{output}</div>;
@@ -174,6 +245,7 @@ export default function QueryPage() {
   const [errorKind, setErrorKind] = useState<'error' | 'rate_limit'>('error');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
+  const [dbSource, setDbSource] = useState<'demo' | 'postgres' | 'csv'>('demo');
   const [plan, setPlan] = useState<'free' | 'pro'>('free');
   const [quotaBanner, setQuotaBanner] = useState<{ plan: 'free' | 'pro' } | null>(null);
   const [checkoutStatus, setCheckoutStatus] =
@@ -225,8 +297,10 @@ export default function QueryPage() {
 
         if (!isAPIError(dbStatus)) {
           setDbConnected(Boolean(dbStatus.connected));
+          setDbSource(dbStatus.source ?? (dbStatus.connected ? 'postgres' : 'demo'));
         } else {
           setDbConnected(false);
+          setDbSource('demo');
         }
 
         if (!isAPIError(savedHistory)) {
@@ -343,7 +417,8 @@ export default function QueryPage() {
     }
   };
 
-  const suggestions = dbConnected ? CONNECTED_SUGGESTIONS : DEMO_SUGGESTIONS;
+  const suggestions =
+    dbSource === 'csv' ? CSV_SUGGESTIONS : dbConnected ? CONNECTED_SUGGESTIONS : DEMO_SUGGESTIONS;
   const cacheHits = history.filter((h) => h.response.cache_hit).length;
   const avgLatency = history.length
     ? Math.round(history.reduce((a, h) => a + h.response.latency_ms, 0) / history.length)
@@ -512,6 +587,7 @@ export default function QueryPage() {
 
         .zq-main {
           flex: 1;
+          min-width: 0;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -581,6 +657,7 @@ export default function QueryPage() {
 
         .zq-scroll {
           flex: 1;
+          min-width: 0;
           overflow-y: auto;
           padding: 20px 28px;
           display: flex;
@@ -613,6 +690,31 @@ export default function QueryPage() {
           font-size: 13.5px; color: var(--muted);
           max-width: 560px; line-height: 1.7; letter-spacing: -0.01em; margin-bottom: 24px;
         }
+
+        .zq-nosource {
+          display: flex; align-items: center; gap: 14px;
+          width: 100%; max-width: 560px;
+          background: var(--as); border: 1px solid rgba(124,131,245,0.25);
+          border-radius: 12px; padding: 14px 16px; margin-bottom: 24px;
+          text-align: left;
+        }
+        .zq-nosource-icon {
+          width: 34px; height: 34px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(124,131,245,0.15); color: var(--accent);
+          border-radius: 9px;
+        }
+        .zq-nosource-body { flex: 1; }
+        .zq-nosource-title { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+        .zq-nosource-text { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 3px; }
+        .zq-nosource-btn {
+          flex-shrink: 0; cursor: pointer;
+          font-family: var(--sans); font-size: 12px; font-weight: 600;
+          color: #fff; background: var(--accent); border: none;
+          padding: 8px 14px; border-radius: 8px; white-space: nowrap;
+          transition: opacity .15s ease, transform .15s ease;
+        }
+        .zq-nosource-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
         .zq-suggestions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; width: 100%; max-width: 560px; }
 
@@ -675,7 +777,7 @@ export default function QueryPage() {
           flex-shrink: 0; margin-top: 2px; box-shadow: 0 2px 8px rgba(124,131,245,0.3);
         }
 
-        .zq-ans-body { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .zq-ans-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 
         .zq-ans-hdr { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
@@ -694,6 +796,20 @@ export default function QueryPage() {
 
         .ans-content { display: flex; flex-direction: column; gap: 6px; }
         .ans-text { font-size: 14px; color: var(--muted); line-height: 1.75; margin: 0; letter-spacing: -0.01em; }
+
+        .ans-h { color: var(--text); font-weight: 700; letter-spacing: -0.02em; line-height: 1.4; margin: 8px 0 2px; }
+        .ans-h1 { font-size: 17px; }
+        .ans-h2 { font-size: 15px; }
+        .ans-h3 { font-size: 13.5px; }
+        .ans-list { margin: 2px 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+        .ans-list li { font-size: 14px; color: var(--muted); line-height: 1.7; letter-spacing: -0.01em; }
+        .ans-list li::marker { color: var(--accent); }
+        .ans-code {
+          font-family: var(--mono); font-size: 12.5px;
+          background: rgba(255,255,255,0.06); color: var(--text);
+          padding: 1px 6px; border-radius: 5px;
+        }
+        .ans-content em { font-style: italic; }
 
         .ans-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; margin: 4px 0; }
 
@@ -911,12 +1027,17 @@ export default function QueryPage() {
                 </h1>
               </div>
 
-              {plan === 'free' && !dbConnected && (
+              {dbSource === 'csv' ? (
+                <div className="zq-db-chip connected">
+                  <span className="zq-db-dot" />
+                  CSV data
+                </div>
+              ) : plan === 'free' && !dbConnected ? (
                 <div className="zq-db-chip demo">
                   <span className="zq-db-dot" />
                   Demo database
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -937,13 +1058,33 @@ export default function QueryPage() {
               <div className="zq-empty">
                 <div className="zq-empty-icon">⚡</div>
                 <div className="zq-empty-title">
-                  {dbConnected ? 'Your database is ready' : 'Ask a question to get started'}
+                  {dbSource === 'csv'
+                    ? 'Your CSV is ready'
+                    : dbConnected ? 'Your database is ready' : 'Ask a question to get started'}
                 </div>
                 <p className="zq-empty-sub">
-                  {dbConnected
+                  {dbSource === 'csv'
+                    ? 'Type in plain English. Zenntraa queries your uploaded CSV and returns exact results.'
+                    : dbConnected
                     ? 'Type in plain English. Zenntraa queries your PostgreSQL database and returns exact results.'
                     : 'Type in plain English. Zenntraa converts it to SQL and returns exact answers — no guessing.'}
                 </p>
+
+                {dbSource === 'demo' && !dbConnected && (
+                  <div className="zq-nosource">
+                    <div className="zq-nosource-icon"><Database size={16} /></div>
+                    <div className="zq-nosource-body">
+                      <div className="zq-nosource-title">No data source connected</div>
+                      <div className="zq-nosource-text">
+                        You&apos;re exploring the built-in demo dataset. To query your own data,
+                        connect a PostgreSQL database or upload a CSV in Settings.
+                      </div>
+                    </div>
+                    <button className="zq-nosource-btn" onClick={() => router.push('/dashboard/settings')}>
+                      Connect a source
+                    </button>
+                  </div>
+                )}
 
                 <div className="zq-suggestions">
                   {suggestions.map((s) => (

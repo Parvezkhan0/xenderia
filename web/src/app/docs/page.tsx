@@ -38,7 +38,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Reference",
     items: [
-      { href: "api-reference", label: "API Reference" },
       { href: "troubleshooting", label: "Troubleshooting" },
       { href: "faq", label: "FAQ" },
     ],
@@ -200,27 +199,6 @@ function QueryItem({
           {label}
         </span>
       )}
-    </div>
-  );
-}
-
-function Endpoint({ method, path }: { method?: string; path: string }) {
-  return (
-    <div style={{
-      background: "var(--z-surface2)",
-      border: "1px solid var(--z-border)",
-      borderRadius: 8,
-      padding: "14px 18px",
-      margin: "12px 0",
-      fontFamily: "'DM Mono', monospace",
-      fontSize: 13,
-    }}>
-      {method && (
-        <span style={{ color: "var(--z-accent)", marginRight: 10, fontWeight: 500 }}>
-          {method}
-        </span>
-      )}
-      <span style={{ color: "var(--z-text)" }}>{path}</span>
     </div>
   );
 }
@@ -747,68 +725,6 @@ export default function DocsPage() {
 
           <Divider />
 
-          {/* ── API REFERENCE ── */}
-          <section id="api-reference" style={sectionStyle}>
-            <SectionTag>Developers</SectionTag>
-            <h2 style={h2Style}>API Reference</h2>
-            <p style={pStyle}>
-              If you&apos;re integrating Zenntraa into your own tools or scripts, use the REST API directly.
-            </p>
-
-            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 10 }}>Base URL</h3>
-            <Endpoint path="https://your-domain.com/api/v1" />
-
-            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 10 }}>Authentication</h3>
-            <p style={pStyle}>All requests require a Firebase Bearer token:</p>
-            <Endpoint path="Authorization: Bearer <your-firebase-token>" />
-
-            <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>POST /query</h3>
-            <p style={pStyle}>Submit a natural language question and receive an answer.</p>
-            <Endpoint method="POST" path="/api/v1/query" />
-
-            <p style={{ ...pStyle, marginTop: 14, marginBottom: 8 }}><strong>Request body:</strong></p>
-            <Table
-              headers={["Field", "Type", "Required", "Description"]}
-              rows={[
-                [<InlineCode key="q">query</InlineCode>, "string", "Yes", "Your natural language question"],
-              ]}
-            />
-
-            <p style={{ ...pStyle, marginTop: 14, marginBottom: 8 }}><strong>Response:</strong></p>
-            <Table
-              headers={["Field", "Description"]}
-              rows={[
-                [<InlineCode key="a">answer</InlineCode>, "The formatted answer to your question"],
-                [<InlineCode key="ch">cache_hit</InlineCode>, "true if served from cache, false if fresh AI call"],
-                [<InlineCode key="l">latency_ms</InlineCode>, "Total response time in milliseconds"],
-                [<InlineCode key="qi">query_id</InlineCode>, "Unique ID for this query"],
-              ]}
-            />
-
-            <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>GET /health</h3>
-            <p style={pStyle}>Check if the Zenntraa system is online.</p>
-            <Endpoint method="GET" path="/api/v1/health" />
-
-            <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>GET /metrics</h3>
-            <p style={pStyle}>Returns total query count, cache hit rate, and average latency.</p>
-            <Endpoint method="GET" path="/api/v1/metrics" />
-
-            <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>GET /cache/status</h3>
-            <p style={pStyle}>Returns cache health, hit count, and hit rate.</p>
-            <Endpoint method="GET" path="/api/v1/cache/status" />
-
-            <h3 style={{ ...h3Style, marginTop: 28, marginBottom: 10 }}>Rate limits</h3>
-            <Table
-              headers={["Limit", "Value"]}
-              rows={[
-                ["Requests per user per minute", "60"],
-                ["Response when exceeded", "HTTP 429"],
-              ]}
-            />
-          </section>
-
-          <Divider />
-
           {/* ── TROUBLESHOOTING ── */}
           <section id="troubleshooting" style={sectionStyle}>
             <SectionTag>Support</SectionTag>
@@ -886,16 +802,6 @@ export default function DocsPage() {
             <FaqItem
               q="What's a good cache hit rate?"
               a="Target 80% or higher. You can check your current cache hit rate on the Metrics page. A low hit rate typically means queries are being phrased differently each time — try standardizing your question wording."
-            />
-            <FaqItem
-              q="Can I use Zenntraa programmatically via API?"
-              a={
-                <>
-                  Yes. Zenntraa exposes a REST API at <InlineCode>POST /api/v1/query</InlineCode>. See the API
-                  Reference section above for full details. Useful for building custom dashboards or automating
-                  report generation.
-                </>
-              }
             />
             <FaqItem
               q="What if Zenntraa gives a wrong answer?"

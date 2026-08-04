@@ -49,6 +49,9 @@ class QueryResult:
     row_count: int
     columns: List[str]
     execution_time_ms: float
+    # True when the result was capped server-side (row count or byte size),
+    # so callers/the LLM can tell the user the answer is partial.
+    truncated: bool = False
 
 
 # Database schema for SQLite

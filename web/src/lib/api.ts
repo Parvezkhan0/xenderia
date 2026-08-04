@@ -131,12 +131,29 @@ export interface DatabaseConnectResponse {
 export interface DatabaseStatusResponse {
   connected: boolean;
   uses_demo: boolean;
+  source?: 'demo' | 'postgres' | 'csv';
   db_type?: string;
   host?: string;
   port?: number;
   database?: string;
   username?: string;
+  tables?: string[];        // populated when source === 'csv'
   message: string;
+}
+// ───────────────────────────────────────────────────────────────────────────
+
+// ── CSV upload types ─────────────────────────────────────────────────────────
+export interface CsvColumnInfo {
+  name: string;
+  type: string;             // INTEGER | REAL | DATE | TEXT
+}
+
+export interface CsvUploadResponse {
+  success: boolean;
+  message: string;
+  table: string;
+  columns: CsvColumnInfo[];
+  row_count: number;
 }
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -384,4 +401,23 @@ export async function getExcelPreview(
       max_rows: maxRows,
     }),
   });
+}
+
+/**
+ * POST /api/v1/csv/upload
+ * Upload a .csv file. The backend ingests it into the current user's private
+ * SQLite database (typed columns) and routes all NL queries to it.
+ */
+export async function uploadCsvFile(file: File): Promise<Result<CsvUploadResponse>> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return uploadRequest<CsvUploadResponse>('/api/v1/csv/upload', formData);
+}
+
+/**
+ * POST /api/v1/csv/remove
+ * Remove the current user's uploaded CSV data source; queries fall back to demo.
+ */
+export async function removeCsv(): Promise<Result<DatabaseConnectResponse>> {
+  return request<DatabaseConnectResponse>('/api/v1/csv/remove', { method: 'POST' });
 }

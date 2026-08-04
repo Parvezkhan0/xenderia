@@ -66,15 +66,19 @@ class SQLQueryTool:
         start_time = time.time()
         
         try:
-            # Multi-tenant routing:
-            # 1. If THIS user has a registered pool, use it (PostgreSQL)
-            # 2. Else fall back to single-user PostgreSQLManager (legacy compat)
-            # 3. Else fall back to SQLite demo dataset
+            # Multi-tenant routing (precedence):
+            # 1. THIS user's own PostgreSQL pool
+            # 2. THIS user's CSV-ingested SQLite database
+            # 3. Legacy single-user PostgreSQLManager (compat)
+            # 4. SQLite demo dataset
             uid = current_user_uid.get()
             user_manager = db_manager.get_manager_for_uid(uid) if db_manager.pools else None
+            csv_manager = db_manager.get_sqlite_manager_for_uid(uid)
 
             if user_manager is not None:
                 result = await user_manager.execute_query(statement)
+            elif csv_manager is not None:
+                result = await csv_manager.execute_query(statement)
             else:
                 pg = get_postgres_manager()
                 active_manager = pg if pg is not None else self.database_manager
@@ -104,10 +108,22 @@ class SQLQueryTool:
                 "rows": result.rows,
                 "row_count": result.row_count,
                 "columns": result.columns,
+                "truncated": result.truncated,
                 "execution_time_ms": execution_time,
                 "statement": statement[:100] + "..." if len(statement) > 100 else statement,
                 "status": "success"
             }
+
+            # Tell the LLM when the result was capped server-side, so it does
+            # not present a partial list as complete or compute totals/averages
+            # from the visible rows instead of using a SQL aggregate.
+            if result.truncated:
+                response["notice"] = (
+                    f"Result was truncated to the first {result.row_count} rows. "
+                    "Tell the user the list is partial, and for totals/averages/counts "
+                    "use a SQL aggregate (SUM, AVG, COUNT) or add WHERE filters/LIMIT "
+                    "rather than computing from these rows."
+                )
 
             logger.info("SQL query executed successfully",
                        query_id=query_id,
@@ -486,11 +502,16 @@ async def sql_get_schema(table_names: Optional[List[str]] = None) -> Dict[str, A
 
     try:
         # ── Resolve which backend to use ──────────────────────────────────
-        # Priority: multi-tenant db_manager → legacy single PostgreSQLManager → SQLite
-        pg_manager = None
-        if db_manager.pools:
-            pg_manager = db_manager.get_manager_for_uid(current_user_uid.get())
-        if pg_manager is None:
+        # Priority: own Postgres pool → CSV SQLite → legacy single PG → SQLite demo.
+        # The SQLite branch below issues its queries through _sql_tool_instance,
+        # so a user's CSV data is reached automatically via the same routing.
+        uid = current_user_uid.get()
+        pg_manager = db_manager.get_manager_for_uid(uid) if db_manager.pools else None
+        has_csv = db_manager.get_sqlite_manager_for_uid(uid) is not None
+
+        # Only fall back to the legacy single PG manager when the user has no CSV
+        # source — otherwise a CSV user would be misrouted to the demo/legacy PG.
+        if pg_manager is None and not has_csv:
             pg_manager = get_postgres_manager()   # may still be None
 
         is_postgres = pg_manager is not None
