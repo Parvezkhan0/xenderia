@@ -445,7 +445,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -464,6 +464,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [dbConnected, setDbConnected] = useState(false);
   const [entitlements, setEntitlements] = useState<EntitlementsResponse | null>(null);
   const [showEmail, setShowEmail] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close the email drop-up when clicking outside it
+  useEffect(() => {
+    if (!showEmail) return;
+    const onDown = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowEmail(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showEmail]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -855,25 +868,59 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="zdl-footer">
-            <div
-              className="zdl-user"
-              onClick={() => setShowEmail((v) => !v)}
-              style={{ cursor: 'pointer' }}
-              title={showEmail ? 'Hide email' : 'Show email'}
-            >
-              <div className="zdl-avatar">{userInitial}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="zdl-user-name">{userName}</div>
-                <div className="zdl-user-plan">{isPro ? 'Pro plan' : 'Starter'}</div>
-                {showEmail && user.email && (
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
+              {showEmail && user.email && (
+                <div
+                  role="menu"
+                  style={{
+                    position: 'absolute',
+                    bottom: 'calc(100% + 6px)',
+                    left: 0,
+                    right: 0,
+                    background: 'var(--card, #14161c)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    boxShadow: '0 12px 28px rgba(0,0,0,0.45)',
+                    zIndex: 50,
+                  }}
+                >
                   <div style={{
-                    fontFamily: 'var(--mono)', fontSize: 9.5, color: 'var(--muted)',
-                    letterSpacing: '0.02em', marginTop: 3,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+                    fontFamily: 'var(--mono)', fontSize: 8.5, letterSpacing: '0.08em',
+                    textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4,
+                  }}>
+                    Signed in as
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg, #e7e9ee)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {user.email}
                   </div>
-                )}
+                </div>
+              )}
+              <div
+                className="zdl-user"
+                onClick={() => setShowEmail((v) => !v)}
+                style={{ cursor: 'pointer' }}
+                title={showEmail ? 'Hide email' : 'Show email'}
+                aria-haspopup="menu"
+                aria-expanded={showEmail}
+              >
+                <div className="zdl-avatar">{userInitial}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="zdl-user-name">{userName}</div>
+                  <div className="zdl-user-plan">{isPro ? 'Pro plan' : 'Starter'}</div>
+                </div>
+                <ChevronRight
+                  size={14}
+                  style={{
+                    color: 'var(--muted)',
+                    transform: showEmail ? 'rotate(-90deg)' : 'rotate(90deg)',
+                    transition: 'transform 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                />
               </div>
             </div>
             <button className="zdl-signout" onClick={handleSignOut}>
