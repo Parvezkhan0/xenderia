@@ -22,6 +22,7 @@ const PLANS = [
     features: [
       '50 queries / month',
       'Connect your own PostgreSQL database',
+      'Upload CSV files',
       'Structured table output',
       'Session query history',
     ],
@@ -38,6 +39,7 @@ const PLANS = [
     features: [
       '1,000 queries / month',
       'Custom PostgreSQL database',
+      'Upload CSV files',
       'Structured table output',
       'Session query history',
       'Intelligent cache warming',
@@ -53,6 +55,7 @@ const COMPARE_ROWS = [
   ['Cache hits billed',          'Never',     'Never'],
   ['Session query history',      '✓',         '✓'],
   ['Connect your own PostgreSQL', '✓',        '✓'],
+  ['Upload CSV files',           '✓',         '✓'],
   ['Structured table output',    '✓',         '✓'],
   ['Cache warming',              '—',         '✓'],
   ['User-isolated cache keys',   '—',         '✓'],
@@ -66,8 +69,8 @@ const FAQS = [
     a: 'Any call to Zenntraa that reaches the AI or the database. Cache hits are always free and do not count against your quota — you only spend queries on cache misses.',
   },
   {
-    q: 'What databases does Zenntraa support?',
-    a: 'Both plans let you connect your own live PostgreSQL database with secure, read-only access. The free plan includes 50 queries per month; Pro raises that to 1,000 and adds cache warming and user-isolated cache keys.',
+    q: 'What data sources does Zenntraa support?',
+    a: 'Both plans let you connect your own live PostgreSQL database with secure, read-only access, or upload a CSV file to query it in plain English — one data source is active at a time. The free plan includes 50 queries per month; Pro raises that to 1,000 and adds cache warming and user-isolated cache keys.',
   },
   {
     q: 'How does caching reduce my costs?',
