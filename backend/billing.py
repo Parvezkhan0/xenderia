@@ -441,7 +441,7 @@ import hashlib
 import hmac
 import logging
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -801,7 +801,10 @@ def save_user_query_history(
             "answer": answer,
             "cache_hit": bool(cache_hit),
             "latency_ms": float(latency_ms),
-            "created_at": datetime.utcnow().isoformat(),
+            # UTC-marked ISO ("...+00:00") so the browser can convert it to the
+            # viewer's own local timezone. A naive value (no offset) is parsed as
+            # local time by JS and shows the wrong hour for anyone not on UTC.
+            "created_at": datetime.now(timezone.utc).isoformat(),
         }, merge=True)
         logger.info(f"Query history saved: uid={user_id} query_id={query_id}")
     except Exception as e:

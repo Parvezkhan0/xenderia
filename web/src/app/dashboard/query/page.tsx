@@ -76,6 +76,50 @@ function formatFinancialNumbers(text: string): string {
   });
 }
 
+// Parse a server timestamp into a Date. If the string has no timezone marker
+// (older rows saved before the UTC fix), treat it as UTC so it isn't misread as
+// local time. The browser then localizes it to the viewer's own timezone.
+function parseServerDate(s?: string): Date {
+  if (!s) return new Date();
+  const hasTz = /([zZ])$|[+-]\d{2}:?\d{2}$/.test(s);
+  return new Date(hasTz ? s : s + 'Z');
+}
+
+// Friendly, non-technical time. Always in the viewer's own local timezone
+// (toLocale* reads the browser's timezone automatically — no library needed).
+//   < 1 min   → "Just now"
+//   < 60 min  → "5 min ago"
+//   today     → "Today, 2:30 PM"
+//   yesterday → "Yesterday, 2:30 PM"
+//   older     → "Aug 15, 2:30 PM"  (adds year if different year)
+function formatFriendlyTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin} min ago`;
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayDiff = Math.floor(
+    (startOfToday.getTime() - new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime())
+    / 86400000
+  );
+
+  if (dayDiff <= 0) return `Today, ${time}`;
+  if (dayDiff === 1) return `Yesterday, ${time}`;
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  const day = date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+  return `${day}, ${time}`;
+}
+
 // Inline markdown within a single line: `code`, **bold**, *italic* / _italic_.
 // Order matters — bold (**) is matched before italic (*).
 function renderInline(text: string, keyBase: string): React.ReactNode[] {
@@ -264,8 +308,8 @@ export default function QueryPage() {
     const mapSavedHistoryToUI = (items: QueryHistoryItem[]): HistoryItem[] => {
       return [...items]
         .sort((a, b) => {
-          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          const aTime = a.created_at ? parseServerDate(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? parseServerDate(b.created_at).getTime() : 0;
           return bTime - aTime;
         })
         .map((item) => ({
@@ -277,7 +321,7 @@ export default function QueryPage() {
             latency_ms: item.latency_ms,
             query_id: item.query_id,
           },
-          timestamp: item.created_at ? new Date(item.created_at) : new Date(),
+          timestamp: item.created_at ? parseServerDate(item.created_at) : new Date(),
         }));
     };
 
@@ -1008,7 +1052,7 @@ export default function QueryPage() {
                       {item.response.cache_hit ? 'HIT' : 'MISS'}
                     </span>
                     <span className="zq-hist-time">
-                      {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatFriendlyTime(item.timestamp)}
                     </span>
                   </div>
                 </button>
@@ -1116,7 +1160,7 @@ export default function QueryPage() {
                         <div className="zq-ans-meta">
                           <span className="zq-meta-item">
                             <Clock size={9} />
-                            {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {formatFriendlyTime(item.timestamp)}
                           </span>
                           <span className="zq-meta-item">ID: {item.response.query_id}</span>
                         </div>
