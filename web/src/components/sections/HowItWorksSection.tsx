@@ -71,7 +71,7 @@ function PreviewCache() {
       </div>
       <div className="preview-body">
         <div style={{ padding: '12px 14px', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.15)', borderRadius: '8px', fontSize: '13px', color: 'rgba(232,233,243,0.7)', lineHeight: 1.6 }}>
-          ⚡ <strong>Cache HIT</strong> — This question was answered 2 days ago. Returning result from memory in 18ms. Zero AI tokens used.
+          ⚡ <strong>Cache HIT</strong> — This question was answered 2 days ago. Returning result from memory instantly. Zero AI tokens used.
         </div>
       </div>
     </div>
@@ -162,7 +162,7 @@ const STEPS = [
     tag: 'Cache Check',
     color: '#34d399',
     title: 'Memory checked first',
-    description: 'Before touching the AI or your database, Zenntraa checks if this question has already been answered. If yes — you get the result in under 50ms. Zero AI cost.',
+    description: 'Before touching the AI or your database, Zenntraa checks if this question has already been answered. If yes — you get the result instantly. Zero AI cost.',
     Preview: PreviewCache,
   },
   {
@@ -184,18 +184,11 @@ const STEPS = [
 ];
 
 function StepRow({ step, index }: { step: typeof STEPS[0]; index: number }) {
-  const { ref, inView } = useInView(0.1);
   const { Preview } = step;
 
   return (
     <div
-      ref={ref}
       className="step-row"
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(36px)',
-        transition: `opacity 0.6s ${index * 0.08}s ease, transform 0.6s ${index * 0.08}s ease`,
-      }}
     >
       {/* Left: text */}
       <div className="step-left">
@@ -217,7 +210,7 @@ function StepRow({ step, index }: { step: typeof STEPS[0]; index: number }) {
       {/* Right: preview */}
       <div className="step-right">
         <div className="step-preview-wrap" style={{ '--card-accent': step.color } as React.CSSProperties}>
-          {inView && <Preview />}
+          <Preview />
         </div>
       </div>
     </div>
@@ -274,7 +267,7 @@ export default function HowItWorksSection() {
           font-family: 'JetBrains Mono', monospace;
           font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
           text-transform: uppercase; color: rgba(124,131,245,0.8);
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s, transform 0.5s;
         }
         .hiw-eyebrow.vis { opacity: 1; transform: translateY(0); }
@@ -286,7 +279,7 @@ export default function HowItWorksSection() {
         .hiw-h2 {
           font-size: clamp(30px, 4vw, 46px); font-weight: 800;
           color: #e8e9f3; letter-spacing: -0.04em; line-height: 1.1;
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s 0.07s, transform 0.5s 0.07s;
         }
         .hiw-h2.vis { opacity: 1; transform: translateY(0); }
@@ -298,7 +291,7 @@ export default function HowItWorksSection() {
         .hiw-sub {
           font-size: 15px; color: rgba(232,233,243,0.45);
           line-height: 1.75; letter-spacing: -0.01em;
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s 0.14s, transform 0.5s 0.14s;
         }
         .hiw-sub.vis { opacity: 1; transform: translateY(0); }
@@ -519,8 +512,7 @@ export default function HowItWorksSection() {
         }
 
         @keyframes fadeSlide {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from, to { opacity: 1; transform: none; }
         }
 
         /* ── Step 3: SQL ── */
@@ -592,7 +584,7 @@ export default function HowItWorksSection() {
         }
 
         @keyframes growBar {
-          from { width: 0 !important; }
+          from, to { opacity: 1; }
         }
 
         .result-val {

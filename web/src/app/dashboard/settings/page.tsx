@@ -19,7 +19,7 @@ interface FormState {
 interface DatabaseStatusResponse {
   connected: boolean;
   uses_demo: boolean;
-  source?: 'demo' | 'postgres' | 'csv';
+  source?: 'demo' | 'postgres' | 'csv' | 'federated';
   db_type?: string;
   host?: string;
   port?: number;
@@ -46,7 +46,24 @@ export default function SettingsPage() {
   const [csvMessage, setCsvMessage] = useState('');
   const [csvTables, setCsvTables]   = useState<string[]>([]);
   const [csvRemoving, setCsvRemoving] = useState(false);
+  const [removingTable, setRemovingTable] = useState<string | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+
+  // Plan: Pro users may run a database AND up to 4 CSVs together (federation);
+  // Free users have a single active source. Defaults to Free on any failure.
+  const [isPro, setIsPro] = useState(false);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getAuth } = await import('firebase/auth');
+        const token = await getAuth().currentUser?.getIdToken() ?? '';
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/user/entitlements`, {
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        });
+        if (res.ok) { const d = await res.json(); setIsPro(d.plan === 'pro'); }
+      } catch { /* default: Free */ }
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -62,6 +79,24 @@ export default function SettingsPage() {
         });
 
         const data: DatabaseStatusResponse = await res.json();
+
+        // Federated (Pro): a database AND uploaded CSV(s) together. Populate both.
+        if (res.ok && data.source === 'federated') {
+          setForm({
+            db_type: 'postgresql',
+            host: data.host || '',
+            port: String(data.port || 5432),
+            database: data.database || '',
+            username: data.username || '',
+            password: '',
+          });
+          setConnectStatus('connected');
+          setConnectMessage('Database connected.');
+          setCsvStatus('active');
+          setCsvTables(data.tables || []);
+          setCsvMessage(data.message || 'Querying your database and uploaded data together.');
+          return;
+        }
 
         // A CSV source reports connected=true but has no Postgres fields —
         // handle it separately so it doesn't populate the PG form.
@@ -140,8 +175,9 @@ export default function SettingsPage() {
       if (res.ok && data.success) {
         setConnectStatus('connected');
         setConnectMessage(data.message ?? 'Database connected successfully');
-        // Single active source: the backend removed any uploaded CSV on connect.
-        setCsvStatus('idle'); setCsvTables([]); setCsvMessage('');
+        // Free is single-source: the backend removed any uploaded CSV on connect.
+        // Pro keeps its CSVs (queried together via federation), so don't clear them.
+        if (!isPro) { setCsvStatus('idle'); setCsvTables([]); setCsvMessage(''); }
       } else {
         setConnectStatus('error');
         const detail = data.detail;
@@ -214,11 +250,16 @@ export default function SettingsPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setCsvStatus('active');
-        setCsvTables([data.table]); // single active CSV — replaces any previous
         setCsvMessage(data.message ?? 'CSV uploaded successfully.');
-        // Single active source: the backend disconnected any database on upload.
-        setConnectStatus('idle'); setConnectMessage('');
-        setForm({ db_type: 'postgresql', host: '', port: '5432', database: '', username: '', password: '' });
+        if (isPro) {
+          // Pro: APPEND the new table; keep any connected database (federation).
+          setCsvTables(prev => (prev.includes(data.table) ? prev : [...prev, data.table]));
+        } else {
+          // Free: single active CSV replaces any previous; backend disconnected any DB.
+          setCsvTables([data.table]);
+          setConnectStatus('idle'); setConnectMessage('');
+          setForm({ db_type: 'postgresql', host: '', port: '5432', database: '', username: '', password: '' });
+        }
       } else {
         setCsvStatus('error');
         const detail = data.detail;
@@ -256,7 +297,37 @@ export default function SettingsPage() {
     }
   };
 
+  // Pro: remove ONE uploaded CSV table (leaves the rest, and any database, intact).
+  const handleCsvRemoveTable = async (table: string) => {
+    if (removingTable) return;
+    setRemovingTable(table);
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const token = await getAuth().currentUser?.getIdToken() ?? '';
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/csv/remove-table`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ table }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCsvTables(prev => {
+          const next = prev.filter(t => t !== table);
+          if (next.length === 0) { setCsvStatus('idle'); setCsvMessage(''); }
+          return next;
+        });
+      } else {
+        setCsvStatus('error'); setCsvMessage(data.message ?? data.detail ?? 'Failed to remove table');
+      }
+    } catch {
+      setCsvStatus('error'); setCsvMessage('Cannot reach backend. Is it running?');
+    } finally {
+      setRemovingTable(null);
+    }
+  };
+
   const connected = connectStatus === 'connected';
+  const maxCsv = isPro ? 4 : 1;
 
   return (
     <>
@@ -794,7 +865,7 @@ export default function SettingsPage() {
                         value={form.host}
                         onChange={set('host')}
                         autoComplete="off"
-                        disabled={connected || csvActive}
+                        disabled={connected || (!isPro && csvActive)}
                       />
                     </div>
                     <div className="zs-field">
@@ -805,7 +876,7 @@ export default function SettingsPage() {
                         value={form.port}
                         onChange={set('port')}
                         autoComplete="off"
-                        disabled={connected || csvActive}
+                        disabled={connected || (!isPro && csvActive)}
                       />
                     </div>
                   </div>
@@ -818,7 +889,7 @@ export default function SettingsPage() {
                       value={form.database}
                       onChange={set('database')}
                       autoComplete="off"
-                      disabled={connected || csvActive}
+                      disabled={connected || (!isPro && csvActive)}
                     />
                   </div>
 
@@ -831,7 +902,7 @@ export default function SettingsPage() {
                         value={form.username}
                         onChange={set('username')}
                         autoComplete="off"
-                        disabled={connected || csvActive}
+                        disabled={connected || (!isPro && csvActive)}
                       />
                     </div>
                     <div className="zs-field">
@@ -844,7 +915,7 @@ export default function SettingsPage() {
                           value={form.password}
                           onChange={set('password')}
                           autoComplete="new-password"
-                          disabled={connected || csvActive}
+                          disabled={connected || (!isPro && csvActive)}
                         />
                         <button
                           type="button"
@@ -852,7 +923,7 @@ export default function SettingsPage() {
                           onClick={() => setShowPassword(p => !p)}
                           tabIndex={-1}
                           aria-label="Toggle password"
-                          disabled={connected || csvActive}
+                          disabled={connected || (!isPro && csvActive)}
                         >
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
@@ -891,7 +962,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {csvActive && (
+              {csvActive && !isPro && (
                 <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, margin: 0 }}>
                   You&apos;re currently querying an uploaded CSV. Remove it in the CSV card below to
                   connect a database — only one data source can be active at a time.
@@ -902,7 +973,7 @@ export default function SettingsPage() {
                 <button
                   className="zs-btn-test"
                   onClick={handleTest}
-                  disabled={!isFormValid || testStatus === 'testing' || connectStatus === 'connecting' || connected || csvActive}
+                  disabled={!isFormValid || testStatus === 'testing' || connectStatus === 'connecting' || connected || (!isPro && csvActive)}
                 >
                   {testStatus === 'testing'
                     ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
@@ -913,7 +984,7 @@ export default function SettingsPage() {
                 <button
                   className={`zs-btn-connect ${connected ? 'connected' : ''}`}
                   onClick={handleConnect}
-                  disabled={!isFormValid || connectStatus === 'connecting' || connected || csvActive}
+                  disabled={!isFormValid || connectStatus === 'connecting' || connected || (!isPro && csvActive)}
                 >
                   {connectStatus === 'connecting'
                     ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
@@ -959,9 +1030,15 @@ export default function SettingsPage() {
               <div className="zs-connected-banner">
                 <div className="zs-connected-dot" />
                 <div>
-                  <div className="zs-connected-text">CSV data active</div>
+                  <div className="zs-connected-text">
+                    {isPro
+                      ? `${csvTables.length} CSV file${csvTables.length !== 1 ? 's' : ''} active`
+                      : 'CSV data active'}
+                  </div>
                   <div className="zs-connected-sub">
-                    {csvTables[0] ? `${csvTables[0]} · ready to query` : 'Ready to query'}
+                    {isPro
+                      ? `${csvTables.length}/${maxCsv} · ready to query`
+                      : (csvTables[0] ? `${csvTables[0]} · ready to query` : 'Ready to query')}
                   </div>
                 </div>
               </div>
@@ -971,10 +1048,12 @@ export default function SettingsPage() {
               <p className="zs-csv-hint">
                 Upload a <strong>.csv</strong> file (max 15&nbsp;MB). Zenntraa detects each column&apos;s
                 type and lets you ask questions about it in plain English — no database required.
-                Only one CSV is active at a time — uploading a new file replaces the current one.
+                {isPro
+                  ? ' Pro: add up to 4 CSVs and query across them — and any connected database — together.'
+                  : ' Only one CSV is active at a time — uploading a new file replaces the current one.'}
               </p>
 
-              {connected && (
+              {connected && !isPro && (
                 <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, margin: 0 }}>
                   A PostgreSQL database is connected. Disconnect it in the card above to upload a
                   CSV — only one data source can be active at a time.
@@ -986,6 +1065,21 @@ export default function SettingsPage() {
                   {csvTables.map(t => (
                     <span key={t} className="zs-csv-table-pill">
                       <Database size={11} /> {t}
+                      {isPro && (
+                        <button
+                          type="button"
+                          onClick={() => handleCsvRemoveTable(t)}
+                          disabled={removingTable === t}
+                          title="Remove this file"
+                          style={{
+                            marginLeft: 6, border: 'none', background: 'transparent',
+                            color: 'var(--muted)', cursor: 'pointer', fontSize: 13,
+                            lineHeight: 1, padding: 0,
+                          }}
+                        >
+                          {removingTable === t ? '…' : '×'}
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -1014,13 +1108,15 @@ export default function SettingsPage() {
                 <button
                   className="zs-btn-connect"
                   onClick={() => csvInputRef.current?.click()}
-                  disabled={csvStatus === 'uploading' || connected}
+                  disabled={csvStatus === 'uploading' || (!isPro && connected) || (isPro && csvTables.length >= maxCsv)}
                 >
                   {csvStatus === 'uploading'
                     ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
                     : <Upload size={14} />}
                   {csvStatus === 'uploading'
                     ? 'Uploading…'
+                    : isPro
+                    ? (csvTables.length > 0 ? `Add CSV (${csvTables.length}/${maxCsv})` : 'Choose CSV file')
                     : csvActive ? 'Replace CSV' : 'Choose CSV file'}
                 </button>
 
@@ -1033,7 +1129,7 @@ export default function SettingsPage() {
                     {csvRemoving
                       ? <Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />
                       : <Trash2 size={14} />}
-                    {csvRemoving ? 'Removing…' : 'Remove CSV'}
+                    {csvRemoving ? 'Removing…' : (isPro ? 'Remove all' : 'Remove CSV')}
                   </button>
                 )}
               </div>

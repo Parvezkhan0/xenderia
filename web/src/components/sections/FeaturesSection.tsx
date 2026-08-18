@@ -16,19 +16,9 @@ function useInView(threshold = 0.1) {
 }
 
 function useCountUp(target: number, duration: number, active: boolean) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    let start: number | null = null;
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const prog = Math.min((ts - start) / duration, 1);
-      setVal(Math.floor(prog * target));
-      if (prog < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [active, target, duration]);
-  return val;
+  // Static: show the final value immediately, no count-up animation.
+  void duration; void active;
+  return target;
 }
 
 // ── Speed Card (large) ──────────────────────────────
@@ -50,7 +40,7 @@ function SpeedCard({ inView }: { inView: boolean }) {
   return (
     <div className="bento-card bento-speed">
       <div className="bento-label">⚡ Speed</div>
-      <h3 className="bento-title">Sub-50ms<br />responses</h3>
+      <h3 className="bento-title">Very fast<br />responses</h3>
       <p className="bento-desc">Your database is never modified.</p>
       <div className="speed-query-list">
         {queries.map((q, i) => (
@@ -62,7 +52,7 @@ function SpeedCard({ inView }: { inView: boolean }) {
             </div>
             <div className="speed-row-right">
               <span className={`speed-badge ${q.hit ? 'hit' : 'miss'}`}>
-                {q.hit ? `${q.ms}ms` : `${q.ms}ms`}
+                {q.hit ? 'instant' : 'fast'}
               </span>
               <span className="speed-type">{q.hit ? 'cache' : 'live'}</span>
             </div>
@@ -93,11 +83,11 @@ function AccuracyCard({ inView }: { inView: boolean }) {
         <div className={`acc-step ${step >= 1 ? 'acc-step-in' : ''}`}>
           <div className="acc-bubble acc-query">"What was TechCorp's Q1 revenue?"</div>
         </div>
-        {step >= 1 && <div className="acc-arrow acc-arrow-in">↓</div>}
+        <div className="acc-arrow acc-arrow-in">↓</div>
         <div className={`acc-step ${step >= 2 ? 'acc-step-in' : ''}`}>
           <div className="acc-bubble acc-sql">SELECT revenue FROM financials<br/>WHERE company = 'TechCorp'<br/>AND quarter = 'Q1'</div>
         </div>
-        {step >= 2 && <div className="acc-arrow acc-arrow-in">↓</div>}
+        <div className="acc-arrow acc-arrow-in">↓</div>
         <div className={`acc-step ${step >= 3 ? 'acc-step-in' : ''}`}>
           <div className="acc-bubble acc-result">
             <span className="acc-val">$1.24B</span>
@@ -121,14 +111,14 @@ function CostCard({ inView }: { inView: boolean }) {
         <div className="cost-bar-wrap">
           <span className="cost-bar-label">Without Zenntraa</span>
           <div className="cost-bar-track">
-            <div className="cost-bar-fill cost-bar-before" style={{ width: inView ? '100%' : '0%' }} />
+            <div className="cost-bar-fill cost-bar-before" style={{ width: '100%' }} />
           </div>
           <span className="cost-bar-val cost-expensive">100% tokens</span>
         </div>
         <div className="cost-bar-wrap">
           <span className="cost-bar-label">With Zenntraa</span>
           <div className="cost-bar-track">
-            <div className="cost-bar-fill cost-bar-after" style={{ width: inView ? '10%' : '0%' }} />
+            <div className="cost-bar-fill cost-bar-after" style={{ width: '10%' }} />
           </div>
           <span className="cost-bar-val cost-cheap">10% tokens</span>
         </div>
@@ -203,7 +193,7 @@ export default function FeaturesSection() {
           font-family: 'JetBrains Mono', monospace;
           font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
           text-transform: uppercase; color: rgba(124,131,245,0.8);
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s, transform 0.5s;
         }
         .zf-eyebrow.vis { opacity: 1; transform: translateY(0); }
@@ -215,7 +205,7 @@ export default function FeaturesSection() {
         .zf-h2 {
           font-size: clamp(30px, 4vw, 48px); font-weight: 800;
           color: #e8e9f3; letter-spacing: -0.04em; line-height: 1.08;
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s 0.07s, transform 0.5s 0.07s;
         }
         .zf-h2.vis { opacity: 1; transform: translateY(0); }
@@ -227,7 +217,7 @@ export default function FeaturesSection() {
         .zf-sub {
           font-size: 15px; color: rgba(232,233,243,0.45);
           line-height: 1.75; max-width: 480px; letter-spacing: -0.01em;
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s 0.14s, transform 0.5s 0.14s;
         }
         .zf-sub.vis { opacity: 1; transform: translateY(0); }
@@ -297,8 +287,8 @@ export default function FeaturesSection() {
         .speed-row {
           display: flex; align-items: center; justify-content: space-between;
           padding: 7px 8px; border-radius: 7px;
-          opacity: 0; transform: translateX(-8px);
-          transition: opacity 0.35s, transform 0.35s, background 0.2s;
+          opacity: 1; transform: none;
+          transition: background 0.2s;
         }
         .speed-row-in { opacity: 1; transform: translateX(0); }
         .speed-row:hover { background: rgba(255,255,255,0.04); }
@@ -324,13 +314,13 @@ export default function FeaturesSection() {
         .accuracy-flow {
           display: flex; flex-direction: column; gap: 6px; margin-top: 4px;
         }
-        .acc-step { opacity: 0; transform: translateY(6px); transition: opacity 0.4s, transform 0.4s; }
+        .acc-step { opacity: 1; transform: none; }
         .acc-step-in { opacity: 1; transform: translateY(0); }
         .acc-arrow {
           font-family: 'JetBrains Mono', monospace;
           font-size: 13px; color: rgba(124,131,245,0.4);
           text-align: center;
-          opacity: 0; animation: fadeIn 0.3s ease forwards;
+          opacity: 1;
         }
         .acc-arrow-in { opacity: 1; }
         .acc-bubble {
@@ -402,8 +392,7 @@ export default function FeaturesSection() {
         }
         .sec-row:hover { background: rgba(255,255,255,0.03); }
         @keyframes fadeInRow {
-          from { opacity: 0; transform: translateX(-6px); }
-          to   { opacity: 1; transform: translateX(0); }
+          from, to { opacity: 1; transform: none; }
         }
         .sec-time {
           font-family: 'JetBrains Mono', monospace;
@@ -441,8 +430,7 @@ export default function FeaturesSection() {
           animation: slideInText 0.35s ease;
         }
         @keyframes slideInText {
-          from { opacity: 0; transform: translateY(4px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from, to { opacity: 1; transform: none; }
         }
         .simp-cursor {
           display: inline-block; width: 2px; height: 15px;

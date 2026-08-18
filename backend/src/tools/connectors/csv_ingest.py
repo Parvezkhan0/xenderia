@@ -84,6 +84,20 @@ def _dedupe_columns(columns: List[str]) -> List[str]:
     return out
 
 
+def _unique_table_name(base: str, existing: List[str]) -> str:
+    """
+    Return `base`, or base_2 / base_3 … so the new table never collides with an
+    existing one. Used only when appending a CSV as a NEW table (Pro multi-CSV);
+    the single-CSV (Free) path passes no existing tables and keeps `base`.
+    """
+    if base not in existing:
+        return base
+    i = 2
+    while f"{base}_{i}"[:64] in existing:
+        i += 1
+    return f"{base}_{i}"[:64]
+
+
 # ---------------------------------------------------------------------------
 # Value parsers (with the minimal safety fixes)
 # ---------------------------------------------------------------------------
@@ -206,7 +220,12 @@ def _open_and_read(csv_path: str) -> Tuple[List[str], List[List[str]]]:
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
-def ingest_csv_to_sqlite(csv_path: str, db_path: str, table_hint: str) -> Dict[str, Any]:
+def ingest_csv_to_sqlite(
+    csv_path: str,
+    db_path: str,
+    table_hint: str,
+    existing_tables: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     """
     Ingest a CSV file into a typed table inside the SQLite database at db_path.
 
@@ -214,6 +233,10 @@ def ingest_csv_to_sqlite(csv_path: str, db_path: str, table_hint: str) -> Dict[s
         csv_path:   Path to the source .csv file on disk.
         db_path:    Path to the per-user SQLite database (created if missing).
         table_hint: Suggested table name (usually the original filename).
+        existing_tables: If given (Pro multi-CSV APPEND), the new table is named
+                    uniquely so it does NOT overwrite an existing one. If None
+                    (Free single CSV), behavior is unchanged — the table keeps its
+                    sanitized name and a same-named table is replaced.
 
     Returns:
         {
@@ -251,6 +274,8 @@ def ingest_csv_to_sqlite(csv_path: str, db_path: str, table_hint: str) -> Dict[s
     affinity = {"INTEGER": "INTEGER", "REAL": "REAL", "DATE": "TEXT", "TEXT": "TEXT"}
 
     table = _sanitize_ident(table_hint, "csv_table")
+    if existing_tables:
+        table = _unique_table_name(table, existing_tables)
 
     os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
     conn = sqlite3.connect(db_path)

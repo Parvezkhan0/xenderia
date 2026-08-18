@@ -459,11 +459,11 @@ export default function DocsPage() {
             </h1>
             <p style={{ fontSize: 17, color: "#b0b8c8", marginBottom: 32, lineHeight: 1.65 }}>
               Zenntraa lets you query your financial database using plain English — no SQL, no code, no waiting.
-              Just ask a question and get an exact answer in milliseconds.
+              Just ask a question and get an exact answer very fast.
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, margin: "24px 0" }}>
-              <Card icon="⚡" title="Sub-50ms on repeat queries"
+              <Card icon="⚡" title="Instant on repeat queries"
                 desc="Zenntraa remembers answers it has given before and returns them instantly from cache — zero AI cost, zero database load." />
               <Card icon="🎯" title="Exact answers, not guesses"
                 desc="Unlike fuzzy AI search, Zenntraa runs real SQL queries against your database. The number you get is the number in your data." />
@@ -491,7 +491,7 @@ export default function DocsPage() {
               <Step num={2} title="Zenntraa checks its memory (cache)">
                 <div style={{ marginBottom: 6 }}>
                   <Badge variant="green">Cache Hit</Badge>
-                  If Zenntraa has answered this exact question before, it returns the stored answer instantly — usually under 50ms. No AI call made, no cost incurred.
+                  If Zenntraa has answered this exact question before, it returns the stored answer instantly. No AI call made, no cost incurred.
                 </div>
                 <div>
                   <Badge variant="blue">Cache Miss</Badge>
@@ -507,7 +507,7 @@ export default function DocsPage() {
                 your data is never at risk of modification.
               </Step>
               <Step num={5} title="Answer is returned and stored">
-                You receive a clean, formatted answer. Zenntraa saves it to cache so the next time anyone asks the same question, it returns in milliseconds.
+                You receive a clean, formatted answer. Zenntraa saves it to cache so the next time anyone asks the same question, it returns instantly.
               </Step>
             </div>
 
@@ -657,7 +657,7 @@ export default function DocsPage() {
             <p style={pStyle}>
               You&apos;ll see the answer below the input box, along with two key indicators: whether the result
               came from <Badge variant="green">Cache Hit</Badge> or a fresh{" "}
-              <Badge variant="blue">Cache Miss</Badge>, and the response latency in milliseconds.
+              <Badge variant="blue">Cache Miss</Badge>, and how fast the response came back.
             </p>
           </section>
 
@@ -702,7 +702,7 @@ export default function DocsPage() {
 
             <Tip>
               <strong style={accentStrong}>Cache tip:</strong> Repeated queries are free and instant. If you run
-              reports regularly, ask questions the same way each time — Zenntraa will serve them from cache in under 50ms.
+              reports regularly, ask questions the same way each time — Zenntraa will serve them from cache instantly.
             </Tip>
           </section>
 
@@ -760,11 +760,11 @@ export default function DocsPage() {
               headers={["Indicator", "What it means"]}
               rows={[
                 [<Badge key="hit" variant="green">Cache Hit</Badge>,
-                  "Answer was retrieved from memory — no AI cost, returned in under 50ms."],
+                  "Answer was retrieved from memory — no AI cost, returned instantly."],
                 [<Badge key="miss" variant="blue">Cache Miss</Badge>,
                   "New question — AI was called, SQL was run, answer is now cached for future use."],
-                ["Latency (ms)",
-                  "Total time from your question to the displayed answer. Cache hits typically show 20–50ms. First-time queries show 500–7000ms depending on complexity."],
+                ["Response time",
+                  "How long the answer took. Cache hits come back near-instantly; first-time queries take a few seconds depending on complexity."],
                 ["Query ID",
                   "Unique identifier for this specific query — useful if you need to report an issue."],
               ]}
@@ -788,7 +788,7 @@ export default function DocsPage() {
             <h3 style={{ ...h3Style, marginTop: 20, marginBottom: 8 }}>Why your first query is slower</h3>
             <p style={pStyle}>
               The first time you ask a question, Zenntraa calls the AI and queries your database. This typically takes
-              1–7 seconds. Every subsequent time you ask the same question, it returns in under 50ms from cache.
+              a few seconds. Every subsequent time you ask the same question, it returns instantly from cache.
             </p>
 
             <h3 style={{ ...h3Style, marginTop: 20, marginBottom: 8 }}>Why slightly different wording causes a miss</h3>

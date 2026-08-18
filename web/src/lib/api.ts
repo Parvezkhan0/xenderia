@@ -131,7 +131,7 @@ export interface DatabaseConnectResponse {
 export interface DatabaseStatusResponse {
   connected: boolean;
   uses_demo: boolean;
-  source?: 'demo' | 'postgres' | 'csv';
+  source?: 'demo' | 'postgres' | 'csv' | 'federated';
   db_type?: string;
   host?: string;
   port?: number;
@@ -420,4 +420,16 @@ export async function uploadCsvFile(file: File): Promise<Result<CsvUploadRespons
  */
 export async function removeCsv(): Promise<Result<DatabaseConnectResponse>> {
   return request<DatabaseConnectResponse>('/api/v1/csv/remove', { method: 'POST' });
+}
+
+/**
+ * POST /api/v1/csv/remove-table
+ * Remove ONE uploaded CSV table (Pro multi-CSV). If it was the last table, the
+ * whole CSV source is dropped. Use removeCsv() to remove all at once.
+ */
+export async function removeCsvTable(table: string): Promise<Result<DatabaseConnectResponse>> {
+  return request<DatabaseConnectResponse>('/api/v1/csv/remove-table', {
+    method: 'POST',
+    body: JSON.stringify({ table }),
+  });
 }

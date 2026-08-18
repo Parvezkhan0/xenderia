@@ -6,7 +6,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
 const STATS = [
-  { value: '<50ms', label: 'avg cached response time' },
+  { value: 'Instant', label: 'cached responses' },
   { value: '90%',   label: 'avg cost reduction, beta users' },
   { value: '100%',  label: 'exact answers pulled directly from DB' },
 ];
@@ -101,8 +101,7 @@ export default function HeroSection() {
         }
 
         @keyframes pulse {
-          0%,100% { opacity:1; transform:scale(1); }
-          50%      { opacity:0.5; transform:scale(0.85); }
+          0%,50%,100% { opacity:1; transform:none; }
         }
 
         .hero-headline {
@@ -251,8 +250,7 @@ export default function HeroSection() {
         }
 
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(18px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from, to { opacity: 1; transform: none; }
         }
 
         /* Responsive */
@@ -292,7 +290,7 @@ export default function HeroSection() {
 
             <p className="hero-sub">
               Zenntraa lets finance teams query revenue, margins, and transaction data
-              in plain English — returning exact numbers in milliseconds, not dashboards to dig through.
+              in plain English — returning exact numbers very fast, not dashboards to dig through.
             </p>
 
             <div className="hero-actions">

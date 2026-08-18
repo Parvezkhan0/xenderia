@@ -21,7 +21,7 @@ const TESTIMONIALS = [
     color: '#7c83f5',
   },
   {
-    quote: "The cache-first approach is genuinely clever. We're hitting sub-30ms on 80% of our queries. The AI cost reduction alone paid for the switch in the first month.",
+    quote: "The cache-first approach is genuinely clever. Repeated queries come back instantly for us. The AI cost reduction alone paid for the switch in the first month.",
     name: 'Priya Nandakumar',
     role: 'Senior Data Scientist',
     company: 'Stackline Data',
@@ -53,19 +53,9 @@ function useInView(threshold = 0.12) {
 }
 
 function useCountUp(target: number, duration: number, active: boolean) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    let start: number | null = null;
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const p = Math.min((ts - start) / duration, 1);
-      setVal(Math.round(p * target));
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [active, target, duration]);
-  return val;
+  // Static: show the final value immediately, no count-up animation.
+  void duration; void active;
+  return target;
 }
 
 function StatItem({ s, active }: { s: typeof STATS[0]; active: boolean }) {
@@ -81,17 +71,12 @@ function StatItem({ s, active }: { s: typeof STATS[0]; active: boolean }) {
   );
 }
 
-function TCard({ t, index }: { t: typeof TESTIMONIALS[0]; index: number }) {
-  const { ref, inView } = useInView(0.08);
+function TCard({ t }: { t: typeof TESTIMONIALS[0] }) {
   return (
     <div
-      ref={ref}
       className="zsp-tcard"
       style={{
         '--card-color': t.color,
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(24px)',
-        transition: `opacity 0.55s ${index * 0.08}s ease, transform 0.55s ${index * 0.08}s ease`,
       } as React.CSSProperties}
     >
       {/* Left accent bar */}
@@ -177,7 +162,7 @@ export default function SocialProofSection() {
           font-family: 'JetBrains Mono', monospace;
           font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
           text-transform: uppercase; color: rgba(124,131,245,0.8);
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s, transform 0.5s;
         }
         .zsp-eyebrow.vis { opacity: 1; transform: translateY(0); }
@@ -189,7 +174,7 @@ export default function SocialProofSection() {
         .zsp-h2 {
           font-size: clamp(30px, 4vw, 46px); font-weight: 800;
           color: #e8e9f3; letter-spacing: -0.04em; line-height: 1.1;
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s 0.07s, transform 0.5s 0.07s;
         }
         .zsp-h2.vis { opacity: 1; transform: translateY(0); }
@@ -201,7 +186,7 @@ export default function SocialProofSection() {
         .zsp-sub {
           font-size: 15px; color: rgba(232,233,243,0.45);
           line-height: 1.75; letter-spacing: -0.01em;
-          opacity: 0; transform: translateY(10px);
+          opacity: 1; transform: none;
           transition: opacity 0.5s 0.14s, transform 0.5s 0.14s;
         }
         .zsp-sub.vis { opacity: 1; transform: translateY(0); }
@@ -382,7 +367,7 @@ export default function SocialProofSection() {
 
           {/* Testimonials (2 only) */}
           <div className="zsp-masonry-2col">
-            {TESTIMONIALS.map((t, i) => <TCard key={t.name} t={t} index={i} />)}
+            {TESTIMONIALS.map((t) => <TCard key={t.name} t={t} />)}
           </div>
 
           {/* Stats */}
@@ -390,8 +375,8 @@ export default function SocialProofSection() {
             className="zsp-stats-wrap"
             ref={statsRef}
             style={{
-              opacity: statsIn ? 1 : 0,
-              transform: statsIn ? 'translateY(0)' : 'translateY(20px)',
+              opacity: 1,
+              transform: 'none',
               transition: 'opacity 0.6s ease, transform 0.6s ease',
             }}
           >

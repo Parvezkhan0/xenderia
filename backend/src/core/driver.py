@@ -21,7 +21,7 @@ from .errors import (
     provide_graceful_degradation, CacheError
 )
 
-from ..db.connection import DatabaseManager, current_user_uid
+from ..db.connection import DatabaseManager, current_user_uid, db_manager
 from ..tools.decorators import get_tool_registry
 from ..tools.connectors.sql import initialize_sql_tool
 from ..monitoring.metrics import get_metrics_collector
@@ -431,7 +431,10 @@ class FACTDriver:
                     schema_text = str(schema_result)
 
                 self._schema_cache[user_id] = schema_text
-                self._schema_prompt_cache[user_id] = self._build_schema_prompt(schema_text)
+                is_federated = db_manager.get_federation_manager_for_uid(user_id) is not None
+                self._schema_prompt_cache[user_id] = self._build_schema_prompt(
+                    schema_text, federated=is_federated
+                )
 
                 logger.info("Schema fetched and cached for user",
                             user_id=user_id,
@@ -442,7 +445,7 @@ class FACTDriver:
                 logger.warning("Could not fetch schema for user — using default system prompt",
                                user_id=user_id, error=str(e))
 
-    def _build_schema_prompt(self, user_schema: str) -> str:
+    def _build_schema_prompt(self, user_schema: str, federated: bool = False) -> str:
         """
         Construct the schema-embedded system prompt that will be sent to the
         Anthropic API with prompt caching enabled.
@@ -454,10 +457,43 @@ class FACTDriver:
 
         Args:
             user_schema: Raw schema text returned by SQL_GetSchema.
+            federated:   True when the schema unions two of the user's own
+                         sources (Postgres + CSV) behind DuckDB. Adds guidance on
+                         the namespaced tables and cross-source JOINs. When False
+                         the prompt is unchanged (the note below is empty).
 
         Returns:
             Complete system prompt string with schema embedded.
         """
+        federation_note = ""
+        if federated:
+            federation_note = (
+                "## Federated Data Sources (IMPORTANT)\n\n"
+                "This database FEDERATES two of the user's own sources, combined so "
+                "you can query and JOIN across them in a single SQL SELECT:\n"
+                "- Tables prefixed `pgdb.` come from the user's connected PostgreSQL "
+                "database (e.g. pgdb.public.orders).\n"
+                "- Tables prefixed `csv.` come from the user's uploaded CSV files "
+                "(e.g. csv.bank_export).\n\n"
+                "Rules for these federated queries:\n"
+                "- Reference every table by its FULL qualified name exactly as shown "
+                "in the schema — keep the `pgdb.` / `csv.` prefix, never drop it.\n"
+                "- The answer to a question may live in EITHER source. Check the schema "
+                "to see which table holds the relevant columns before querying.\n"
+                "- You MAY JOIN across the two sources when a question needs both.\n"
+                "- If the needed data is in neither source, say so plainly — never "
+                "invent a value.\n\n"
+                "Disambiguating financial terms (be consistent across questions):\n"
+                "- 'Actual' amounts — actual spend, actual revenue, money actually paid or "
+                "received — come from the transaction-level `csv.*` tables (individual "
+                "transaction / ledger / invoice lines). NEVER derive an 'actual' figure "
+                "from a budget or target multiplied by a utilization or percentage column.\n"
+                "- Budgets, targets, allocations, limits, credit scores, ratings and other "
+                "master/reference attributes come from the `pgdb.*` tables.\n"
+                "- When a term maps to more than one table or definition, choose the "
+                "transaction-level source for actual/spend/revenue questions, and ALWAYS "
+                "state which table(s) and column(s) the number came from.\n\n"
+            )
         return (
             "You are a financial SQL assistant with direct access to a relational "
             "database. Your job is to answer user questions about financial data by "
@@ -469,6 +505,7 @@ class FACTDriver:
             "or assume the existence of any table or column that does not appear.\n\n"
             f"{user_schema}\n\n"
 
+            f"{federation_note}"
             "## Query Instructions\n\n"
             "When a user asks a financial question:\n"
             "1. Identify the relevant tables and columns from the schema above.\n"

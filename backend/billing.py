@@ -458,6 +458,7 @@ PLANS: dict[str, dict] = {
         "cache_warming": False,
         "user_isolated_cache": False,
         "analytics": False,
+        "csv_tables": 1,           # Free: one CSV, single active source
     },
     "pro": {
         "queries_per_month": 1000,
@@ -466,6 +467,7 @@ PLANS: dict[str, dict] = {
         "cache_warming": True,
         "user_isolated_cache": True,
         "analytics": True,
+        "csv_tables": 4,           # Pro: up to 4 CSVs, may coexist with a database
     },
 }
 

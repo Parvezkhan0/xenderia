@@ -289,7 +289,7 @@ export default function QueryPage() {
   const [errorKind, setErrorKind] = useState<'error' | 'rate_limit'>('error');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [dbConnected, setDbConnected] = useState(false);
-  const [dbSource, setDbSource] = useState<'demo' | 'postgres' | 'csv'>('demo');
+  const [dbSource, setDbSource] = useState<'demo' | 'postgres' | 'csv' | 'federated'>('demo');
   const [plan, setPlan] = useState<'free' | 'pro'>('free');
   const [quotaBanner, setQuotaBanner] = useState<{ plan: 'free' | 'pro' } | null>(null);
   const [checkoutStatus, setCheckoutStatus] =
@@ -1071,7 +1071,12 @@ export default function QueryPage() {
                 </h1>
               </div>
 
-              {dbSource === 'csv' ? (
+              {dbSource === 'federated' ? (
+                <div className="zq-db-chip connected">
+                  <span className="zq-db-dot" />
+                  Database + CSV
+                </div>
+              ) : dbSource === 'csv' ? (
                 <div className="zq-db-chip connected">
                   <span className="zq-db-dot" />
                   CSV data
@@ -1102,12 +1107,16 @@ export default function QueryPage() {
               <div className="zq-empty">
                 <div className="zq-empty-icon">⚡</div>
                 <div className="zq-empty-title">
-                  {dbSource === 'csv'
+                  {dbSource === 'federated'
+                    ? 'Your database + CSVs are ready'
+                    : dbSource === 'csv'
                     ? 'Your CSV is ready'
                     : dbConnected ? 'Your database is ready' : 'Ask a question to get started'}
                 </div>
                 <p className="zq-empty-sub">
-                  {dbSource === 'csv'
+                  {dbSource === 'federated'
+                    ? 'Type in plain English. Zenntraa queries your database and uploaded CSVs together and returns exact results.'
+                    : dbSource === 'csv'
                     ? 'Type in plain English. Zenntraa queries your uploaded CSV and returns exact results.'
                     : dbConnected
                     ? 'Type in plain English. Zenntraa queries your PostgreSQL database and returns exact results.'

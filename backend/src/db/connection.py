@@ -901,6 +901,12 @@ class MultiTenantManager:
         # Kept separate from the Postgres pools; routing precedence is:
         #   own Postgres pool → CSV SQLite → demo SQLite.
         self._sqlite_managers: Dict[str, "DatabaseManager"] = {}
+        # uid → the raw PostgreSQL credentials used to build that user's pool.
+        # Stored so a DuckDB federation manager (Pro: Postgres + CSV together)
+        # can re-attach the same Postgres read-only. Only ever holds a user's OWN
+        # credentials (never "shared"); Firestore already persists these in
+        # plaintext for MVP, so this adds no new exposure.
+        self._pg_credentials: Dict[str, dict] = {}
 
     # ------------------------------------------------------------------
     async def add_user_pool(self, uid: str, credentials: dict) -> None:
@@ -937,6 +943,16 @@ class MultiTenantManager:
 
         self._managers[uid] = manager
         self.pools[uid] = manager._pool
+        # Remember this user's own credentials for DuckDB federation. Never store
+        # under "shared" — federation is only ever a user's own PG + own CSV.
+        if uid != "shared":
+            self._pg_credentials[uid] = {
+                "host": credentials["host"],
+                "port": credentials.get("port", 5432),
+                "database": credentials["database"],
+                "username": credentials["username"],
+                "password": credentials["password"],
+            }
 
         logger.info(
             "Multi-tenant pool registered",
@@ -952,6 +968,26 @@ class MultiTenantManager:
         Returns None if neither uid nor "shared" pool exists.
         """
         return self._managers.get(uid) or self._managers.get("shared")
+
+    # ------------------------------------------------------------------
+    def get_federation_manager_for_uid(self, uid: str):
+        """
+        Return a DuckDBFederationManager IFF this user has BOTH their own
+        PostgreSQL credentials AND a CSV SQLite registered — i.e. the only case
+        where the two must be queried together. Returns None otherwise, so every
+        single-source user (Free, or Pro with just one source) falls through to
+        the existing PostgreSQL / SQLite / demo routing completely unchanged.
+
+        Constructed fresh each call (the manager is stateless and cheap).
+        """
+        creds = self._pg_credentials.get(uid)
+        sqlite_mgr = self._sqlite_managers.get(uid)
+        if creds is None or sqlite_mgr is None:
+            return None
+        # Imported lazily so importing this module never requires duckdb unless a
+        # federated query is actually made.
+        from .duckdb_federation import DuckDBFederationManager
+        return DuckDBFederationManager(creds, sqlite_mgr.database_path)
 
     # ------------------------------------------------------------------
     # Per-user CSV-backed SQLite registry
@@ -1039,6 +1075,7 @@ class MultiTenantManager:
         """Close and remove a user's pool (e.g. on disconnect/logout)."""
         manager = self._managers.pop(uid, None)
         self.pools.pop(uid, None)
+        self._pg_credentials.pop(uid, None)
         if manager:
             await manager.close()
             logger.info("Multi-tenant pool removed", uid=uid)
@@ -1053,6 +1090,7 @@ class MultiTenantManager:
                 logger.error("Failed to close pool", uid=uid, error=str(e))
         self._managers.clear()
         self.pools.clear()
+        self._pg_credentials.clear()
         logger.info("All multi-tenant pools closed")
 
 

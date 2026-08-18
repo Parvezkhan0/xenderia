@@ -19,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Zenntraa — Exact Financial Data, Instantly",
   description:
-    "Natural language financial queries for fintech finance teams. Exact numbers in milliseconds — no SQL, no dashboards, no guessing.",
+    "Natural language financial queries for fintech finance teams. Exact numbers very fast — no SQL, no dashboards, no guessing.",
   keywords: [
     "financial data",
     "natural language SQL",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Zenntraa — Exact Financial Data, Instantly",
     description:
-      "Ask financial questions in plain English. Get exact SQL-backed answers in milliseconds, not approximations.",
+      "Ask financial questions in plain English. Get exact SQL-backed answers very fast, not approximations.",
     type: "website",
   },
 };

@@ -74,11 +74,11 @@ const FAQS = [
   },
   {
     q: 'How does caching reduce my costs?',
-    a: 'Zenntraa caches the system prompt, schema definitions, and query results. Repeated queries are served from memory — zero AI tokens billed, sub-50ms response. On average teams see a 90% reduction in token costs within the first week.',
+    a: 'Zenntraa caches the system prompt, schema definitions, and query results. Repeated queries are served from memory — zero AI tokens billed, returned very fast. On average teams see a 90% reduction in token costs within the first week.',
   },
   {
     q: 'What is cache warming?',
-    a: 'Pro users can pre-load their most frequent queries into the cache. This ensures even the first query of the day returns in milliseconds rather than waiting for a cold cache miss.',
+    a: 'Pro users can pre-load their most frequent queries into the cache. This ensures even the first query of the day returns instantly rather than waiting for a cold cache miss.',
   },
   {
     q: 'How do I pay for Pro?',

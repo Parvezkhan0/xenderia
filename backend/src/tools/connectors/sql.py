@@ -67,15 +67,22 @@ class SQLQueryTool:
         
         try:
             # Multi-tenant routing (precedence):
+            # 0. Federated: THIS user's own PostgreSQL AND CSV together (DuckDB).
+            #    Only ever non-None when the user has BOTH sources at once, which
+            #    single-source users (Free, or Pro with one source) never do — so
+            #    all the branches below are reached exactly as before.
             # 1. THIS user's own PostgreSQL pool
             # 2. THIS user's CSV-ingested SQLite database
             # 3. Legacy single-user PostgreSQLManager (compat)
             # 4. SQLite demo dataset
             uid = current_user_uid.get()
+            fed_manager = db_manager.get_federation_manager_for_uid(uid)
             user_manager = db_manager.get_manager_for_uid(uid) if db_manager.pools else None
             csv_manager = db_manager.get_sqlite_manager_for_uid(uid)
 
-            if user_manager is not None:
+            if fed_manager is not None:
+                result = await fed_manager.execute_query(statement)
+            elif user_manager is not None:
                 result = await user_manager.execute_query(statement)
             elif csv_manager is not None:
                 result = await csv_manager.execute_query(statement)
@@ -506,6 +513,15 @@ async def sql_get_schema(table_names: Optional[List[str]] = None) -> Dict[str, A
         # The SQLite branch below issues its queries through _sql_tool_instance,
         # so a user's CSV data is reached automatically via the same routing.
         uid = current_user_uid.get()
+
+        # Federated (Pro: own Postgres + CSV together) — return the union schema
+        # for BOTH the overview and detailed calls, so the LLM sees the namespaced
+        # tables (pgdb.* / csv.*) it must query. None for every single-source user,
+        # so the existing overview/detail logic below runs exactly as before.
+        fed_manager = db_manager.get_federation_manager_for_uid(uid)
+        if fed_manager is not None:
+            return await fed_manager.get_schema()
+
         pg_manager = db_manager.get_manager_for_uid(uid) if db_manager.pools else None
         has_csv = db_manager.get_sqlite_manager_for_uid(uid) is not None
 

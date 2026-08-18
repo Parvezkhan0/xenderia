@@ -1125,7 +1125,7 @@ class DatabaseConnectResponse(BaseModel):
 class DatabaseStatusResponse(BaseModel):
     connected: bool
     uses_demo: bool
-    source: Optional[str] = None        # 'demo' | 'postgres' | 'csv'
+    source: Optional[str] = None        # 'demo' | 'postgres' | 'csv' | 'federated'
     db_type: Optional[str] = None
     host: Optional[str] = None
     port: Optional[int] = None
@@ -1367,8 +1367,14 @@ async def query(request: Request, body: QueryRequest):
         )
     # ─────────────────────────────────────────────────────────────────────
 
-    # Re-activate a previously-uploaded CSV source if the process restarted.
-    # No-op when the user has no CSV or already has an active source.
+    # Re-activate previously-saved sources if the process restarted, so queries —
+    # including Pro DuckDB federation (Postgres + CSV together) — see both. Each
+    # restore is a no-op when the user lacks that source (a deactivated DB is not
+    # returned by get_user_db_connection). Best-effort — never fail the query here.
+    try:
+        await _restore_saved_user_pool(uid)
+    except Exception as e:
+        print(f"⚠️ DB pool restore failed for uid={uid}: {e}")
     try:
         await _restore_user_csv(uid)
     except Exception as e:
@@ -1625,8 +1631,31 @@ async def database_status(request: Request):
             message="Using shared SQLite demo database.",
         )
 
-    # Precedence must mirror query routing: own Postgres pool → CSV → demo.
-    saved = await _restore_saved_user_pool(uid)
+    # Restore both sources (each a no-op when the user lacks it), then report the
+    # combination — this must mirror query routing:
+    #   both → federated (Pro DuckDB) ; own Postgres → postgres ; CSV → csv ; else demo.
+    saved   = await _restore_saved_user_pool(uid)   # active saved DB, or None
+    has_csv = await _restore_user_csv(uid)          # True if a CSV source exists
+
+    if saved and has_csv:
+        # Federated: Pro user with a database AND uploaded CSV(s), queried together.
+        tables = list(_user_csv_tables.get(uid, {}).keys())
+        return DatabaseStatusResponse(
+            connected=True,
+            uses_demo=False,
+            source="federated",
+            db_type=saved.get("db_type", "postgresql"),
+            host=saved.get("host"),
+            port=saved.get("port"),
+            database=saved.get("database"),
+            username=saved.get("username"),
+            tables=tables,
+            message=(
+                f"Querying your database and {len(tables)} uploaded CSV "
+                f"file{'s' if len(tables) != 1 else ''} together."
+            ),
+        )
+
     if saved:
         return DatabaseStatusResponse(
             connected=True,
@@ -1640,7 +1669,7 @@ async def database_status(request: Request):
             message="Saved PostgreSQL connection restored successfully.",
         )
 
-    if await _restore_user_csv(uid):
+    if has_csv:
         tables = list(_user_csv_tables.get(uid, {}).keys())
         return DatabaseStatusResponse(
             connected=True,
@@ -1698,17 +1727,19 @@ async def connect_database(request: Request, req: DatabaseConnectRequest):
 
         _clear_user_schema_cache(uid)
 
-        # Single active source: a user has EITHER a database OR a CSV, never both.
-        # Connecting a database removes any uploaded CSV so only one source is
-        # ever queried. Best-effort — never fail the connect if this cleanup errors.
-        try:
-            await db_manager.remove_user_csv(uid)
-            _user_csv_tables.pop(uid, None)
-            csv_db = _user_csv_db_path(uid)
-            if csv_db.exists():
-                csv_db.unlink()
-        except Exception as switch_err:
-            print(f"⚠️ Failed to remove CSV after DB connect for uid={uid}: {switch_err}")
+        # Single active source is a FREE-plan rule. Free users have EITHER a
+        # database OR a CSV, so connecting a DB removes any uploaded CSV. Pro users
+        # may keep BOTH (DuckDB federation queries them together), so their CSV is
+        # left in place. Best-effort — never fail the connect on cleanup error.
+        if get_plan_limits(get_user_plan(uid)).get("csv_tables", 1) <= 1:
+            try:
+                await db_manager.remove_user_csv(uid)
+                _user_csv_tables.pop(uid, None)
+                csv_db = _user_csv_db_path(uid)
+                if csv_db.exists():
+                    csv_db.unlink()
+            except Exception as switch_err:
+                print(f"⚠️ Failed to remove CSV after DB connect for uid={uid}: {switch_err}")
 
         return DatabaseConnectResponse(
             success=True,
@@ -1841,34 +1872,58 @@ async def upload_csv_file(request: Request, file: UploadFile = File(...)):
         with open(raw_path, "wb") as f:
             f.write(content)
 
-        # Single active CSV per user: close and delete any existing dataset so
-        # the new upload REPLACES it (one table) rather than adding a table.
-        # Unregister first so no open SQLite handle blocks deleting the file.
-        await db_manager.remove_user_csv(uid)
-        if db_path.exists():
+        max_csv = get_plan_limits(get_user_plan(uid)).get("csv_tables", 1)
+
+        if max_csv <= 1:
+            # FREE: single active CSV — REPLACE any existing dataset (one table),
+            # and disconnect any database (single source). Unchanged behavior.
+            # Unregister first so no open SQLite handle blocks deleting the file.
+            await db_manager.remove_user_csv(uid)
+            if db_path.exists():
+                try:
+                    db_path.unlink()
+                except Exception:
+                    pass
+            _user_csv_tables.pop(uid, None)
+
+            # Ingest is CPU/IO-bound and synchronous — run it off the event loop.
+            meta = await asyncio.to_thread(
+                ingest_csv_to_sqlite, str(raw_path), str(db_path), safe_name
+            )
+            await db_manager.register_user_csv(uid, str(db_path))
+            _clear_user_schema_cache(uid)
+            _user_csv_tables[uid] = {meta["table"]: meta}
+
+            # Single active source: uploading a CSV disconnects any saved Postgres.
             try:
-                db_path.unlink()
-            except Exception:
-                pass
-        _user_csv_tables.pop(uid, None)
-
-        # Ingest is CPU/IO-bound and synchronous — run it off the event loop.
-        meta = await asyncio.to_thread(
-            ingest_csv_to_sqlite, str(raw_path), str(db_path), safe_name
-        )
-
-        await db_manager.register_user_csv(uid, str(db_path))
-        _clear_user_schema_cache(uid)
-        _user_csv_tables[uid] = {meta["table"]: meta}
-
-        # Single active source: a user has EITHER a database OR a CSV, never both.
-        # Uploading a CSV disconnects any saved Postgres so only one source is
-        # ever queried. Best-effort — never fail the upload if this cleanup errors.
-        try:
-            await db_manager.remove_user_pool(uid)
-            deactivate_user_db_connection(uid)
-        except Exception as switch_err:
-            print(f"⚠️ Failed to deactivate DB after CSV upload for uid={uid}: {switch_err}")
+                await db_manager.remove_user_pool(uid)
+                deactivate_user_db_connection(uid)
+            except Exception as switch_err:
+                print(f"⚠️ Failed to deactivate DB after CSV upload for uid={uid}: {switch_err}")
+        else:
+            # PRO: APPEND as a NEW table (up to max_csv), keeping any existing CSVs
+            # AND any connected database — DuckDB federation queries them together.
+            existing = _list_sqlite_tables(db_path)
+            if len(existing) >= max_csv:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"You can have up to {max_csv} CSV files at once. "
+                        f"Remove one before uploading another."
+                    ),
+                )
+            # Ingest with a table name unique among the existing tables (append,
+            # never overwrite). The file is NOT deleted.
+            meta = await asyncio.to_thread(
+                ingest_csv_to_sqlite, str(raw_path), str(db_path), safe_name, existing
+            )
+            await db_manager.register_user_csv(uid, str(db_path))
+            _clear_user_schema_cache(uid)
+            # Refresh the in-memory table list from disk, preserving known meta.
+            prior = _user_csv_tables.get(uid, {})
+            _user_csv_tables[uid] = {t: prior.get(t, {}) for t in _list_sqlite_tables(db_path)}
+            _user_csv_tables[uid][meta["table"]] = meta
+            # NOTE: the database is intentionally left connected for Pro.
 
         return CsvUploadResponse(
             success=True,
@@ -1919,6 +1974,65 @@ async def remove_csv_file(request: Request):
         )
     except Exception as e:
         return DatabaseConnectResponse(success=False, message=f"Failed to remove CSV: {e}")
+
+
+class RemoveCsvTableRequest(BaseModel):
+    table: str
+
+
+@app.post("/api/v1/csv/remove-table", response_model=DatabaseConnectResponse)
+async def remove_csv_table(request: Request, body: RemoveCsvTableRequest):
+    """
+    Remove ONE uploaded CSV table (Pro multi-CSV). If it was the last table, the
+    whole CSV source is dropped. `/csv/remove` still removes ALL CSV data at once.
+    """
+    uid   = _resolve_uid_from_request(request, require_auth_in_production=True)
+    table = (body.table or "").strip()
+    db_path = _user_csv_db_path(uid)
+
+    try:
+        tables = _list_sqlite_tables(db_path)
+        if table not in tables:
+            raise HTTPException(status_code=404, detail=f"No uploaded table named '{table}'.")
+
+        # Release the SQLite handle before mutating the file.
+        await db_manager.remove_user_csv(uid)
+
+        import sqlite3
+        conn = sqlite3.connect(str(db_path))
+        try:
+            # `table` is validated against the live table list above, and CSV table
+            # names are produced by the ingester's identifier sanitizer — safe to quote.
+            conn.execute(f'DROP TABLE IF EXISTS "{table}"')
+            conn.commit()
+        finally:
+            conn.close()
+
+        remaining = _list_sqlite_tables(db_path)
+        if remaining:
+            await db_manager.register_user_csv(uid, str(db_path))
+            prior = _user_csv_tables.get(uid, {})
+            _user_csv_tables[uid] = {t: prior.get(t, {}) for t in remaining}
+        else:
+            _user_csv_tables.pop(uid, None)
+            if db_path.exists():
+                try:
+                    db_path.unlink()
+                except Exception:
+                    pass
+        _clear_user_schema_cache(uid)
+
+        return DatabaseConnectResponse(
+            success=True,
+            message=(
+                f"Removed CSV '{table}'."
+                + ("" if remaining else " No CSV data remains.")
+            ),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        return DatabaseConnectResponse(success=False, message=f"Failed to remove table: {e}")
 
 
 # ---------------------------------------------------------------------------
