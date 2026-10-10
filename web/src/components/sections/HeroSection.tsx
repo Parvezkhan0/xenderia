@@ -289,7 +289,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="hero-sub">
-              Zenntraa lets finance teams query revenue, margins, and transaction data
+              Xenderia lets finance teams query revenue, margins, and transaction data
               in plain English — returning exact numbers very fast, not dashboards to dig through.
             </p>
 
@@ -325,11 +325,11 @@ export default function HeroSection() {
                   <div className="chrome-dot chrome-dot-y" />
                   <div className="chrome-dot chrome-dot-g" />
                 </div>
-                <div className="chrome-url">app.zenntraa.dev/dashboard/query</div>
+                <div className="chrome-url">app.xenderia.dev/dashboard/query</div>
               </div>
               <Image
                 src="/dashboard-preview.png"
-                alt="Zenntraa dashboard"
+                alt="Xenderia dashboard"
                 width={1200}
                 height={780}
                 className="dashboard-img"

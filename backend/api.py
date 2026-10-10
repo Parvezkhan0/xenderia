@@ -1032,7 +1032,7 @@ _explicit_origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_explicit_origins,
-    allow_origin_regex=r"https://(zenntraa(-[a-z0-9-]+)?\.vercel\.app|www\.zenntraa\.com|zenntraa\.com)",
+    allow_origin_regex=r"https://(xenderia(-[a-z0-9-]+)?\.vercel\.app|www\.xenderia\.com|xenderia\.com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -2060,7 +2060,7 @@ async def contact_form(body: ContactRequest):
                 "from":     from_email,
                 "to":       [contact_email],
                 "reply_to": body.email,
-                "subject":  f"Zenntraa Contact: {body.name}",
+                "subject":  f"Xenderia Contact: {body.name}",
                 "text":     f"Name:    {body.name}\nEmail:   {body.email}\n\nMessage:\n{body.message}",
             },
             timeout=10,

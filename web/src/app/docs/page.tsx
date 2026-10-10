@@ -20,7 +20,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Getting Started",
     items: [
-      { href: "what-is-zenntraa", label: "What is Zenntraa?" },
+      { href: "what-is-xenderia", label: "What is Xenderia?" },
       { href: "how-it-works", label: "How It Works" },
       { href: "connect-database", label: "Connect Your Database" },
       { href: "upload-csv", label: "Upload a CSV" },
@@ -29,7 +29,7 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Using Zenntraa",
+    label: "Using Xenderia",
     items: [
       { href: "writing-queries", label: "Writing Good Queries" },
       { href: "query-examples", label: "Query Examples" },
@@ -289,7 +289,7 @@ function FaqItem({ q, a }: { q: string; a: React.ReactNode }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState("what-is-zenntraa");
+  const [activeSection, setActiveSection] = useState("what-is-xenderia");
   const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -402,7 +402,7 @@ export default function DocsPage() {
               fontFamily: "'Syne', sans-serif", fontWeight: 800,
               fontSize: 20, letterSpacing: "-0.5px", color: "var(--z-accent)",
             }}>
-              Zenntraa
+              Xenderia
             </div>
             <div style={{
               fontSize: 11, color: "var(--z-muted)",
@@ -440,14 +440,14 @@ export default function DocsPage() {
           style={{ flex: 1, maxWidth: 860, padding: "64px 72px", overflowY: "auto" }}
         >
 
-          {/* ── WHAT IS ZENNTRAA ── */}
-          <section id="what-is-zenntraa" style={sectionStyle}>
+          {/* ── WHAT IS XENDERIA ── */}
+          <section id="what-is-xenderia" style={sectionStyle}>
             <SectionTag>Introduction</SectionTag>
             <h1 style={{
               fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 40,
               lineHeight: 1.15, letterSpacing: "-1px", marginBottom: 16, color: "var(--z-text)",
             }}>
-              Zenntraa{" "}
+              Xenderia{" "}
               <span style={{
                 background: "linear-gradient(90deg, var(--z-accent), var(--z-accent2))",
                 WebkitBackgroundClip: "text",
@@ -458,19 +458,19 @@ export default function DocsPage() {
               </span>
             </h1>
             <p style={{ fontSize: 17, color: "#b0b8c8", marginBottom: 32, lineHeight: 1.65 }}>
-              Zenntraa lets you query your financial database using plain English — no SQL, no code, no waiting.
+              Xenderia lets you query your financial database using plain English — no SQL, no code, no waiting.
               Just ask a question and get an exact answer very fast.
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, margin: "24px 0" }}>
               <Card icon="⚡" title="Instant on repeat queries"
-                desc="Zenntraa remembers answers it has given before and returns them instantly from cache — zero AI cost, zero database load." />
+                desc="Xenderia remembers answers it has given before and returns them instantly from cache — zero AI cost, zero database load." />
               <Card icon="🎯" title="Exact answers, not guesses"
-                desc="Unlike fuzzy AI search, Zenntraa runs real SQL queries against your database. The number you get is the number in your data." />
+                desc="Unlike fuzzy AI search, Xenderia runs real SQL queries against your database. The number you get is the number in your data." />
               <Card icon="🔒" title="Read-only & secure"
-                desc="Zenntraa can only read your data — never modify or delete it. All queries are validated before execution." />
+                desc="Xenderia can only read your data — never modify or delete it. All queries are validated before execution." />
               <Card icon="💬" title="Plain English interface"
-                desc="No SQL knowledge required. Ask questions the way you'd ask a colleague — Zenntraa handles the technical translation." />
+                desc="No SQL knowledge required. Ask questions the way you'd ask a colleague — Xenderia handles the technical translation." />
             </div>
           </section>
 
@@ -481,21 +481,21 @@ export default function DocsPage() {
             <SectionTag>Architecture</SectionTag>
             <h2 style={h2Style}>How It Works</h2>
             <p style={pStyle}>
-              Every time you submit a query, Zenntraa follows one of two paths depending on whether it has seen your question before.
+              Every time you submit a query, Xenderia follows one of two paths depending on whether it has seen your question before.
             </p>
 
             <div style={{ margin: "24px 0" }}>
               <Step num={1} title="You type a question in plain English">
                 Example: <em>&quot;What was TechCorp&apos;s revenue in Q1 2025?&quot;</em>
               </Step>
-              <Step num={2} title="Zenntraa checks its memory (cache)">
+              <Step num={2} title="Xenderia checks its memory (cache)">
                 <div style={{ marginBottom: 6 }}>
                   <Badge variant="green">Cache Hit</Badge>
-                  If Zenntraa has answered this exact question before, it returns the stored answer instantly. No AI call made, no cost incurred.
+                  If Xenderia has answered this exact question before, it returns the stored answer instantly. No AI call made, no cost incurred.
                 </div>
                 <div>
                   <Badge variant="blue">Cache Miss</Badge>
-                  If it&apos;s a new question, Zenntraa moves to step 3.
+                  If it&apos;s a new question, Xenderia moves to step 3.
                 </div>
               </Step>
               <Step num={3} title="AI converts your question to SQL">
@@ -507,13 +507,13 @@ export default function DocsPage() {
                 your data is never at risk of modification.
               </Step>
               <Step num={5} title="Answer is returned and stored">
-                You receive a clean, formatted answer. Zenntraa saves it to cache so the next time anyone asks the same question, it returns instantly.
+                You receive a clean, formatted answer. Xenderia saves it to cache so the next time anyone asks the same question, it returns instantly.
               </Step>
             </div>
 
             <Tip>
               <strong style={accentStrong}>Why this matters for finance:</strong> In financial analysis, you often ask the same
-              questions repeatedly — quarter comparisons, KPI checks, sector summaries. Zenntraa&apos;s cache turns those repeated
+              questions repeatedly — quarter comparisons, KPI checks, sector summaries. Xenderia&apos;s cache turns those repeated
               lookups into near-instant responses at zero additional cost.
             </Tip>
           </section>
@@ -525,7 +525,7 @@ export default function DocsPage() {
             <SectionTag>Setup</SectionTag>
             <h2 style={h2Style}>Connect Your Database</h2>
             <p style={pStyle}>
-              Before running queries, connect Zenntraa to your database. Navigate to{" "}
+              Before running queries, connect Xenderia to your database. Navigate to{" "}
               <strong>Settings → Connect Database</strong> in your dashboard.
             </p>
 
@@ -535,10 +535,10 @@ export default function DocsPage() {
               </Step>
               <Step num={2} title="Enter your database credentials">
                 Fill in your <strong>Host</strong>, <strong>Port</strong>, <strong>Database Name</strong>,{" "}
-                <strong>Username</strong>, and <strong>Password</strong>. Zenntraa supports PostgreSQL databases.
+                <strong>Username</strong>, and <strong>Password</strong>. Xenderia supports PostgreSQL databases.
               </Step>
               <Step num={3} title="Test the connection">
-                Click <strong>Test Connection</strong> to verify credentials before saving. Zenntraa will confirm
+                Click <strong>Test Connection</strong> to verify credentials before saving. Xenderia will confirm
                 whether it can reach your database.
               </Step>
               <Step num={4} title="Activate">
@@ -553,7 +553,7 @@ export default function DocsPage() {
             </p>
 
             <WarnTip>
-              <strong style={{ color: "var(--z-warn)" }}>Note:</strong> Zenntraa only ever reads from your database —
+              <strong style={{ color: "var(--z-warn)" }}>Note:</strong> Xenderia only ever reads from your database —
               it cannot write, update, or delete any records. Your data is safe.
             </WarnTip>
           </section>
@@ -582,7 +582,7 @@ export default function DocsPage() {
                 your computer. Maximum file size is 15 MB.
               </Step>
               <Step num={3} title="Upload">
-                Zenntraa reads the file, detects column types automatically, and makes it ready to query.
+                Xenderia reads the file, detects column types automatically, and makes it ready to query.
               </Step>
               <Step num={4} title="Start querying">
                 Go to the Query page. Your CSV is now the active data source.
@@ -593,7 +593,7 @@ export default function DocsPage() {
               Only one CSV can be active at a time. Uploading a new file replaces the previous one.
             </p>
 
-            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 10 }}>What Zenntraa detects automatically</h3>
+            <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 10 }}>What Xenderia detects automatically</h3>
             <ul style={{ margin: "8px 0 16px", paddingLeft: 22, color: "#c9cdd8", fontSize: 15, lineHeight: 1.85 }}>
               <li>Numbers including values formatted with commas like 1,200,000</li>
               <li>Dates in standard formats</li>
@@ -615,7 +615,7 @@ export default function DocsPage() {
             <SectionTag>Setup</SectionTag>
             <h2 style={h2Style}>Data Sources</h2>
             <p style={pStyle}>
-              Zenntraa works with three data sources and only one is active at a time.
+              Xenderia works with three data sources and only one is active at a time.
             </p>
 
             <Table
@@ -668,7 +668,7 @@ export default function DocsPage() {
             <SectionTag>Best Practices</SectionTag>
             <h2 style={h2Style}>Writing Good Queries</h2>
             <p style={pStyle}>
-              Zenntraa understands natural language, but the more specific your question, the more accurate
+              Xenderia understands natural language, but the more specific your question, the more accurate
               and cache-friendly the answer.
             </p>
 
@@ -682,7 +682,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 8 }}>Use exact company names</h3>
             <p style={pStyle}>
-              Zenntraa queries your database directly, so company names must match what&apos;s stored.
+              Xenderia queries your database directly, so company names must match what&apos;s stored.
               If a query returns no results, try the exact spelling as it appears in your data.
             </p>
 
@@ -702,7 +702,7 @@ export default function DocsPage() {
 
             <Tip>
               <strong style={accentStrong}>Cache tip:</strong> Repeated queries are free and instant. If you run
-              reports regularly, ask questions the same way each time — Zenntraa will serve them from cache instantly.
+              reports regularly, ask questions the same way each time — Xenderia will serve them from cache instantly.
             </Tip>
           </section>
 
@@ -782,12 +782,12 @@ export default function DocsPage() {
             <SectionTag>Performance</SectionTag>
             <h2 style={h2Style}>Cache &amp; Speed</h2>
             <p style={pStyle}>
-              Zenntraa&apos;s cache is what makes it dramatically faster and cheaper than running AI queries every time.
+              Xenderia&apos;s cache is what makes it dramatically faster and cheaper than running AI queries every time.
             </p>
 
             <h3 style={{ ...h3Style, marginTop: 20, marginBottom: 8 }}>Why your first query is slower</h3>
             <p style={pStyle}>
-              The first time you ask a question, Zenntraa calls the AI and queries your database. This typically takes
+              The first time you ask a question, Xenderia calls the AI and queries your database. This typically takes
               a few seconds. Every subsequent time you ask the same question, it returns instantly from cache.
             </p>
 
@@ -799,7 +799,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 20, marginBottom: 8 }}>Why cached answers don&apos;t last forever</h3>
             <p style={pStyle}>
-              Your database data changes — new companies get added, financial records get updated. Zenntraa&apos;s cache
+              Your database data changes — new companies get added, financial records get updated. Xenderia&apos;s cache
               has a limited lifetime to ensure you always see fresh data rather than stale results.
             </p>
 
@@ -819,7 +819,7 @@ export default function DocsPage() {
             <h3 style={{ ...h3Style, marginTop: 8, marginBottom: 12 }}>Query returns no results</h3>
             <p style={pStyle}>
               This usually means the data doesn&apos;t exist in your database for the specified parameters.
-              Try asking Zenntraa what data is available:
+              Try asking Xenderia what data is available:
             </p>
             <div style={{ margin: "16px 0" }}>
               <QueryItem icon="→" text="What time periods do we have financial data for?" />
@@ -828,7 +828,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>Query returns an error about a column not existing</h3>
             <p style={pStyle}>
-              Zenntraa occasionally generates SQL using a column name that doesn&apos;t exactly match your schema.
+              Xenderia occasionally generates SQL using a column name that doesn&apos;t exactly match your schema.
               It will automatically retry with the correct schema. If errors persist, try rephrasing your question more specifically.
             </p>
 
@@ -847,7 +847,7 @@ export default function DocsPage() {
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>Database won&apos;t connect</h3>
             <p style={pStyle}>
               Double-check that your host, port, database name, username, and password are all correct.
-              Ensure your database server allows inbound connections from Zenntraa&apos;s IP.
+              Ensure your database server allows inbound connections from Xenderia&apos;s IP.
               Use the <strong>Test Connection</strong> button in Settings to diagnose.
             </p>
 
@@ -859,7 +859,7 @@ export default function DocsPage() {
 
             <h3 style={{ ...h3Style, marginTop: 24, marginBottom: 12 }}>My CSV uploaded but the numbers look wrong</h3>
             <p style={pStyle}>
-              If your CSV had numbers formatted with commas like 1,200,000, Zenntraa removes the commas
+              If your CSV had numbers formatted with commas like 1,200,000, Xenderia removes the commas
               before storing so calculations work correctly. If results still look off, check that the
               column contains only numeric values with no mixed text.
             </p>
@@ -896,28 +896,28 @@ export default function DocsPage() {
             <h2 style={h2Style}>Frequently Asked Questions</h2>
 
             <FaqItem
-              q="Do I need to know SQL to use Zenntraa?"
-              a="No. Zenntraa converts your plain English questions into SQL automatically. You never write or see any SQL unless you specifically ask for it."
+              q="Do I need to know SQL to use Xenderia?"
+              a="No. Xenderia converts your plain English questions into SQL automatically. You never write or see any SQL unless you specifically ask for it."
             />
             <FaqItem
-              q="Can Zenntraa modify or delete my data?"
-              a="No. Zenntraa is strictly read-only. Only SELECT queries are permitted — it cannot insert, update, or delete any records in your database."
+              q="Can Xenderia modify or delete my data?"
+              a="No. Xenderia is strictly read-only. Only SELECT queries are permitted — it cannot insert, update, or delete any records in your database."
             />
             <FaqItem
               q="Why does the same question sometimes get a Cache Miss?"
-              a='Zenntraa caches by exact question text. Minor wording differences — "List all companies" vs "Show me all companies" — are treated as separate questions. Use consistent phrasing for queries you run regularly to always hit the cache.'
+              a='Xenderia caches by exact question text. Minor wording differences — "List all companies" vs "Show me all companies" — are treated as separate questions. Use consistent phrasing for queries you run regularly to always hit the cache.'
             />
             <FaqItem
-              q="How long does Zenntraa keep cached answers?"
-              a="Cache entries expire automatically to prevent stale data. Since financial databases update regularly, Zenntraa refreshes its cache on a short cycle to ensure you always see accurate results."
+              q="How long does Xenderia keep cached answers?"
+              a="Cache entries expire automatically to prevent stale data. Since financial databases update regularly, Xenderia refreshes its cache on a short cycle to ensure you always see accurate results."
             />
             <FaqItem
-              q="What databases does Zenntraa support?"
-              a="Zenntraa supports PostgreSQL databases and CSV file uploads. If you are on the demo, it uses built-in sample financial data. You can set up either under Settings, but not both at the same time."
+              q="What databases does Xenderia support?"
+              a="Xenderia supports PostgreSQL databases and CSV file uploads. If you are on the demo, it uses built-in sample financial data. You can set up either under Settings, but not both at the same time."
             />
             <FaqItem
               q="Can I have both a CSV and a PostgreSQL database at the same time?"
-              a="No. Zenntraa uses one data source at a time. Remove the current one first and then set up the other."
+              a="No. Xenderia uses one data source at a time. Remove the current one first and then set up the other."
             />
             <FaqItem
               q="Will my CSV still be there when I come back?"
@@ -932,8 +932,8 @@ export default function DocsPage() {
               a="Target 80% or higher. You can check your current cache hit rate on the Metrics page. A low hit rate typically means queries are being phrased differently each time — try standardizing your question wording."
             />
             <FaqItem
-              q="What if Zenntraa gives a wrong answer?"
-              a="Zenntraa retrieves exact values from your database — it doesn't guess or estimate. If an answer looks wrong, verify the underlying data in your database first. If the data is correct but the answer is still wrong, contact support with the Query ID shown in the response."
+              q="What if Xenderia gives a wrong answer?"
+              a="Xenderia retrieves exact values from your database — it doesn't guess or estimate. If an answer looks wrong, verify the underlying data in your database first. If the data is correct but the answer is still wrong, contact support with the Query ID shown in the response."
             />
             <FaqItem
               q="How do I get support on the Free plan?"

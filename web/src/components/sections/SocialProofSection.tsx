@@ -13,7 +13,7 @@ const COMPANIES = [
 
 const TESTIMONIALS = [
   {
-    quote: "We replaced our entire RAG pipeline with Zenntraa in a week. Query accuracy went from 'close enough' to exact. Our analysts stopped second-guessing the numbers.",
+    quote: "We replaced our entire RAG pipeline with Xenderia in a week. Query accuracy went from 'close enough' to exact. Our analysts stopped second-guessing the numbers.",
     name: 'James Whitfield',
     role: 'Head of Data Engineering',
     company: 'Meridian Capital',
@@ -360,7 +360,7 @@ export default function SocialProofSection() {
               <span className="hl">Now don't.</span>
             </h2>
             <p className={`zsp-sub ${headIn ? 'vis' : ''}`}>
-              A small group of data and finance teams helped us shape Zenntraa in beta.
+              A small group of data and finance teams helped us shape Xenderia in beta.
               Here's what they said.
             </p>
           </div>

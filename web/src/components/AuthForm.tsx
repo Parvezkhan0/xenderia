@@ -367,8 +367,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
         <div className="za-wrap">
 
           <Link href="/" className="za-logo">
-            <Image src="/logo.png" alt="Zenntraa" width={28} height={28} className="za-logo-img" />
-            <span className="za-logo-word">Zenntraa</span>
+            <Image src="/logo.png" alt="Xenderia" width={28} height={28} className="za-logo-img" />
+            <span className="za-logo-word">Xenderia</span>
           </Link>
 
           <div className="za-card">
@@ -379,7 +379,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
               </h1>
               <p className="za-sub">
                 {isLogin
-                  ? 'Sign in to your Zenntraa workspace.'
+                  ? 'Sign in to your Xenderia workspace.'
                   : 'Create your account. Free forever on Starter.'}
               </p>
             </div>

@@ -1,5 +1,5 @@
 # """
-# Zenntraa Billing — Razorpay + Firebase Firestore
+# Xenderia Billing — Razorpay + Firebase Firestore
 # ===============================================
 # Handles webhook events, plan storage, monthly quota tracking,
 # persistent per-user database connection storage,
@@ -418,7 +418,7 @@
 #         logger.debug(f"Unhandled Razorpay event: {event}")
 
 """
-Zenntraa Billing — Razorpay + Firebase Firestore
+Xenderia Billing — Razorpay + Firebase Firestore
 ===============================================
 Handles webhook events, plan storage, monthly quota tracking,
 persistent per-user database connection storage,
@@ -637,7 +637,7 @@ def get_uid_by_subscription(subscription_id: str) -> str:
 def _resolve_subscription_uid(payload: dict) -> tuple[str, dict]:
     """
     Resolve (uid, subscription_entity) for a Razorpay subscription webhook.
-    uid is '' when the subscription cannot be matched to any Zenntraa account.
+    uid is '' when the subscription cannot be matched to any Xenderia account.
     Tries three fallback paths: notes.user_id → subscription_id reverse index → email lookup.
     """
     sub = payload.get("payload", {}).get("subscription", {}).get("entity", {}) or {}

@@ -141,7 +141,7 @@ export default function FinalCtaSection() {
             <span className="hl-gradient">answered instantly.</span>
           </h2>
           <p className="final-cta-sub">
-            Join the 6 finance teams already using Zenntraa to replace dashboards, eliminate guessing, and cut AI costs by 90%.
+            Join the 6 finance teams already using Xenderia to replace dashboards, eliminate guessing, and cut AI costs by 90%.
           </p>
           <div className="final-cta-actions">
             {user ? (

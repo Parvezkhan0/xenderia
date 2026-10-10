@@ -16,7 +16,7 @@ const PLANS = [
     name: 'Starter',
     price: 'Free',
     period: '',
-    pitch: 'Try Zenntraa with no commitment. Perfect for solo analysts and personal projects.',
+    pitch: 'Try Xenderia with no commitment. Perfect for solo analysts and personal projects.',
     cta: 'Get started free',
     hot: false,
     features: [
@@ -66,15 +66,15 @@ const COMPARE_ROWS = [
 const FAQS = [
   {
     q: 'What counts as a query?',
-    a: 'Any call to Zenntraa that reaches the AI or the database. Cache hits are always free and do not count against your quota — you only spend queries on cache misses.',
+    a: 'Any call to Xenderia that reaches the AI or the database. Cache hits are always free and do not count against your quota — you only spend queries on cache misses.',
   },
   {
-    q: 'What data sources does Zenntraa support?',
+    q: 'What data sources does Xenderia support?',
     a: 'Both plans let you connect your own live PostgreSQL database with secure, read-only access, or upload a CSV file to query it in plain English — one data source is active at a time. The free plan includes 50 queries per month; Pro raises that to 1,000 and adds cache warming and user-isolated cache keys.',
   },
   {
     q: 'How does caching reduce my costs?',
-    a: 'Zenntraa caches the system prompt, schema definitions, and query results. Repeated queries are served from memory — zero AI tokens billed, returned very fast. On average teams see a 90% reduction in token costs within the first week.',
+    a: 'Xenderia caches the system prompt, schema definitions, and query results. Repeated queries are served from memory — zero AI tokens billed, returned very fast. On average teams see a 90% reduction in token costs within the first week.',
   },
   {
     q: 'What is cache warming?',
@@ -153,7 +153,7 @@ export default function PricingPage() {
     // Must be signed in first: the hosted subscription link is static/shared
     // and cannot carry the Firebase UID, so the backend links the resulting
     // subscription to this account BY THE EMAIL the user pays with — which
-    // must match their Zenntraa account email. Force account creation first.
+    // must match their Xenderia account email. Force account creation first.
     if (!uid) {
       router.push('/signup?plan=pro');
       return;
@@ -412,7 +412,7 @@ export default function PricingPage() {
               <span className="hl">Not for cache hits.</span>
             </h1>
             <p className="zp-sub">
-              Cache hits are always free. You only spend quota when Zenntraa
+              Cache hits are always free. You only spend quota when Xenderia
               has to do real work — and it caches that too.
             </p>
             <div className="zp-cache-pill">

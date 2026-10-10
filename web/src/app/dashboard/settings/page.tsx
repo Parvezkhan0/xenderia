@@ -806,7 +806,7 @@ export default function SettingsPage() {
           <div className="zs-hdr-eye">Settings</div>
           <h1 className="zs-hdr-title">Connect your database</h1>
           <p className="zs-hdr-sub">
-            Give Zenntraa read-only access to your PostgreSQL database. It will translate
+            Give Xenderia read-only access to your PostgreSQL database. It will translate
             plain English queries into SQL and return exact results.
           </p>
         </div>
@@ -936,7 +936,7 @@ export default function SettingsPage() {
               <div className="zs-security">
                 <Shield size={15} className="zs-security-icon" />
                 <p className="zs-security-text">
-                  <strong>Read-only access only.</strong> Zenntraa never writes to your database.
+                  <strong>Read-only access only.</strong> Xenderia never writes to your database.
                   Credentials are used only to establish the connection and are stored for persistent reconnects during this MVP phase.
                 </p>
               </div>
@@ -1046,7 +1046,7 @@ export default function SettingsPage() {
 
             <div className="zs-card-body">
               <p className="zs-csv-hint">
-                Upload a <strong>.csv</strong> file (max 15&nbsp;MB). Zenntraa detects each column&apos;s
+                Upload a <strong>.csv</strong> file (max 15&nbsp;MB). Xenderia detects each column&apos;s
                 type and lets you ask questions about it in plain English — no database required.
                 {isPro
                   ? ' Pro: add up to 4 CSVs and query across them — and any connected database — together.'

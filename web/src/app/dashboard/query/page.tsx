@@ -361,10 +361,10 @@ export default function QueryPage() {
     };
 
     syncStateFromBackend();
-    window.addEventListener('zenntraa:query', syncStateFromBackend);
+    window.addEventListener('xenderia:query', syncStateFromBackend);
 
     return () => {
-      window.removeEventListener('zenntraa:query', syncStateFromBackend);
+      window.removeEventListener('xenderia:query', syncStateFromBackend);
     };
   }, []);
 
@@ -398,7 +398,7 @@ export default function QueryPage() {
         setPlan('pro');
         setCheckoutStatus('success');
         // Refresh db status / history now that Pro is active.
-        window.dispatchEvent(new Event('zenntraa:query'));
+        window.dispatchEvent(new Event('xenderia:query'));
         return;
       }
 
@@ -447,7 +447,7 @@ export default function QueryPage() {
         setError(result.message);
       }
     } else {
-      window.dispatchEvent(new Event('zenntraa:query'));
+      window.dispatchEvent(new Event('xenderia:query'));
     }
 
     setLoading(false);
@@ -1115,12 +1115,12 @@ export default function QueryPage() {
                 </div>
                 <p className="zq-empty-sub">
                   {dbSource === 'federated'
-                    ? 'Type in plain English. Zenntraa queries your database and uploaded CSVs together and returns exact results.'
+                    ? 'Type in plain English. Xenderia queries your database and uploaded CSVs together and returns exact results.'
                     : dbSource === 'csv'
-                    ? 'Type in plain English. Zenntraa queries your uploaded CSV and returns exact results.'
+                    ? 'Type in plain English. Xenderia queries your uploaded CSV and returns exact results.'
                     : dbConnected
-                    ? 'Type in plain English. Zenntraa queries your PostgreSQL database and returns exact results.'
-                    : 'Type in plain English. Zenntraa converts it to SQL and returns exact answers — no guessing.'}
+                    ? 'Type in plain English. Xenderia queries your PostgreSQL database and returns exact results.'
+                    : 'Type in plain English. Xenderia converts it to SQL and returns exact answers — no guessing.'}
                 </p>
 
                 {dbSource === 'demo' && !dbConnected && (
@@ -1162,7 +1162,7 @@ export default function QueryPage() {
                       <div className="zq-ans-avatar">Z</div>
                       <div className="zq-ans-body">
                         <div className="zq-ans-hdr">
-                          <span className="zq-ans-name">Zenntraa</span>
+                          <span className="zq-ans-name">Xenderia</span>
                           <CacheBadge hit={item.response.cache_hit} latency={item.response.latency_ms} />
                         </div>
                         {renderAnswer(item.response.answer)}

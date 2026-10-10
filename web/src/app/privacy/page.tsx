@@ -111,7 +111,7 @@ export default function PrivacyPage() {
           <div className="legal-section">
             <h2 className="legal-h2">1. Who We Are</h2>
             <p className="legal-p">
-              Zenntraa ("we", "us", "our") is an AI-powered financial data query platform. This Privacy Policy explains what personal data we collect, how we use it, and the choices you have. By using the Service you agree to the practices described here.
+              Xenderia ("we", "us", "our") is an AI-powered financial data query platform. This Privacy Policy explains what personal data we collect, how we use it, and the choices you have. By using the Service you agree to the practices described here.
             </p>
           </div>
 
@@ -254,7 +254,7 @@ export default function PrivacyPage() {
           <div className="legal-section">
             <h2 className="legal-h2">9. Children's Privacy</h2>
             <p className="legal-p">
-              Zenntraa is not directed at children under 18. We do not knowingly collect personal data from minors. If you believe a minor has created an account, please contact us and we will delete the account promptly.
+              Xenderia is not directed at children under 18. We do not knowingly collect personal data from minors. If you believe a minor has created an account, please contact us and we will delete the account promptly.
             </p>
           </div>
 

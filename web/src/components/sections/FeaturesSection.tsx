@@ -109,14 +109,14 @@ function CostCard({ inView }: { inView: boolean }) {
       <p className="bento-desc">Your database is never modified.</p>
       <div className="cost-meter">
         <div className="cost-bar-wrap">
-          <span className="cost-bar-label">Without Zenntraa</span>
+          <span className="cost-bar-label">Without Xenderia</span>
           <div className="cost-bar-track">
             <div className="cost-bar-fill cost-bar-before" style={{ width: '100%' }} />
           </div>
           <span className="cost-bar-val cost-expensive">100% tokens</span>
         </div>
         <div className="cost-bar-wrap">
-          <span className="cost-bar-label">With Zenntraa</span>
+          <span className="cost-bar-label">With Xenderia</span>
           <div className="cost-bar-track">
             <div className="cost-bar-fill cost-bar-after" style={{ width: '10%' }} />
           </div>
@@ -522,7 +522,7 @@ export default function FeaturesSection() {
           <div className="zf-head" ref={headRef}>
             <span className={`zf-eyebrow ${headIn ? 'vis' : ''}`}>
               <span className="zf-eyebrow-dot" />
-              Why Zenntraa
+              Why Xenderia
             </span>
             <h2 className={`zf-h2 ${headIn ? 'vis' : ''}`}>
               Built for <span className="hl">precision</span>,<br />not approximation.

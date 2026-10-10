@@ -131,7 +131,7 @@
 //       amount: orderData.amount,
 //       currency: orderData.currency,
 
-//       name: 'Zenntraa',
+//       name: 'Xenderia',
 //       description: 'Pro Plan — 1,000 queries/month',
 //       image: '/logo.png',
 

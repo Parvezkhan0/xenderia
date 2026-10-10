@@ -96,16 +96,16 @@ export default function Footer() {
         <Link href="/" className="zfooter-logo">
           <Image
             src="/logo.png"
-            alt="Zenntraa"
+            alt="Xenderia"
             width={26}
             height={26}
             className="zfooter-logo-img"
           />
-          <span className="zfooter-logo-name">Zenntraa</span>
+          <span className="zfooter-logo-name">Xenderia</span>
         </Link>
 
         {/* Centre — copyright */}
-        <span className="zfooter-copy">© {new Date().getFullYear()} Zenntraa Systems, Inc.</span>
+        <span className="zfooter-copy">© {new Date().getFullYear()} Xenderia Systems, Inc.</span>
 
         {/* Right — links */}
         <div className="zfooter-links">
